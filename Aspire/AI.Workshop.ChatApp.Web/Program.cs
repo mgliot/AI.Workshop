@@ -88,10 +88,14 @@ else
 }
 
 var gitHubKey = builder.Configuration["GITHUB_APIKEY"];
-var gitHubClient = new GitHubClient(new ProductHeaderValue("AI-Workshop.ChatApp.Web"))
+GitHubClient? gitHubClient = null;
+if (!string.IsNullOrEmpty(gitHubKey))
 {
-    Credentials = new Credentials(gitHubKey)
-};
+    gitHubClient = new GitHubClient(new ProductHeaderValue("AI-Workshop.ChatApp.Web"))
+    {
+        Credentials = new Credentials(gitHubKey)
+    };
+}
 
 //await DataIngestor.IngestDataAsync(
 //    app.Services,

@@ -116,21 +116,31 @@ The easiest way to get started is using the included Dev Container configuration
    - `Ctrl+Shift+P` → "Dev Containers: Reopen in Container"
 
 4. Wait for the container to build (first time takes ~5-10 minutes)
-   - Ollama and Qdrant containers start automatically
-   - Required AI models (llama3.2, all-minilm) are pulled automatically
 
-5. Start developing:
+5. Run the Aspire AppHost to start all services:
    ```bash
-   dotnet build AI.Workshop.sln
-   dotnet run --project AI.Workshop.ConsoleChat.Ollama
+   dotnet run --project Aspire/AI.Workshop.ChatApp.AppHost
    ```
+   This will automatically start Ollama, Qdrant, and pull required AI models.
 
-#### Dev Container Services
-| Service | Port | Description |
-|---------|------|-------------|
-| Ollama API | 11434 | Local LLM inference |
-| Qdrant HTTP | 6333 | Vector database API |
-| Qdrant gRPC | 6334 | Vector database gRPC |
+#### Dev Container Features
+
+The Dev Container provides:
+- .NET 10 SDK pre-installed
+- Docker-in-Docker for Aspire container management
+- Git and GitHub CLI
+
+**Note:** Ollama and Qdrant containers are **not** started automatically by the Dev Container. They are managed by .NET Aspire when you run the AppHost project:
+
+```bash
+dotnet run --project Aspire/AI.Workshop.ChatApp.AppHost
+```
+
+Aspire will automatically:
+- Start Ollama container with GPU auto-detection
+- Start Qdrant vector database container
+- Pull required models (llama3.2, all-minilm)
+- Configure all service connections
 
 ---
 
@@ -238,32 +248,53 @@ Configure in code or environment variables as needed.
 
 ### GPU Acceleration (Aspire)
 
-The Aspire AppHost automatically detects and configures GPU acceleration. Set the `GPU_VENDOR` environment variable to override:
+The Aspire AppHost automatically detects and configures GPU acceleration:
+
+**⚠️ Windows + Docker Desktop Limitation:**
+Docker Desktop runs Linux containers in WSL2. GPU passthrough only works for **NVIDIA GPUs** with the NVIDIA Container Toolkit. AMD/Intel Vulkan drivers cannot be passed through to Linux containers.
+
+| Host OS | GPU Vendor | Container Support | Alternative |
+|---------|------------|-------------------|-------------|
+| Windows | NVIDIA | ✅ Works (via Container Toolkit) | - |
+| Windows | AMD | ❌ CPU fallback | Run Ollama natively with `OLLAMA_VULKAN=1` |
+| Windows | Intel | ❌ CPU fallback | Run Ollama natively with `OLLAMA_VULKAN=1` |
+| Linux | NVIDIA | ✅ Works (via Container Toolkit) | - |
+| Linux | AMD | ✅ Works (ROCm image) | - |
+| Linux | Intel | ✅ Works (device passthrough) | - |
+
+**For Windows AMD/Intel users wanting GPU acceleration:**
+```bash
+# Option 1: Run Ollama natively (outside Docker)
+$env:OLLAMA_VULKAN="1"
+ollama serve
+
+# Then run Aspire without the Ollama container (configure to use external Ollama)
+```
+
+**Auto-detection:**
+- Windows: Uses WMI `Win32_VideoController` queries
+- Priority: NVIDIA → AMD → Intel
+
+Set the `GPU_VENDOR` environment variable to override auto-detection:
 
 | Value | Description |
 |-------|-------------|
 | `nvidia` | NVIDIA GPU (requires NVIDIA Container Toolkit) |
-| `amd` | AMD GPU with ROCm (requires ROCm drivers) |
-| `intel` | Intel GPU (experimental, requires Intel compute runtime) |
+| `amd` | AMD GPU - Linux: ROCm, Windows: CPU fallback |
+| `intel` | Intel GPU - Linux: device passthrough, Windows: CPU fallback |
 | `cpu` or `none` | Disable GPU, use CPU only |
-| *(not set)* | Auto-detect (tries NVIDIA first) |
+| *(not set)* | Auto-detect (NVIDIA → AMD → Intel) |
 
 **Example:**
 ```bash
-# For AMD GPU with ROCm
-GPU_VENDOR=amd dotnet run --project Aspire/AI.Workshop.ChatApp.AppHost
-
-# For Intel GPU
-GPU_VENDOR=intel dotnet run --project Aspire/AI.Workshop.ChatApp.AppHost
-
-# CPU only
+# Force CPU-only mode
 GPU_VENDOR=cpu dotnet run --project Aspire/AI.Workshop.ChatApp.AppHost
 ```
 
 **Requirements by GPU vendor:**
 - **NVIDIA**: Install [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/)
-- **AMD**: Install ROCm drivers, add user to `render` and `video` groups
-- **Intel**: Install Intel compute runtime and level-zero drivers
+- **AMD (Linux)**: Install ROCm drivers, add user to `render` and `video` groups
+- **Intel (Linux)**: Install Intel compute runtime and level-zero drivers
 
 ### Qdrant (for Aspire)
 Automatically provisioned by Aspire AppHost with persistent data volume.

@@ -7,55 +7,15 @@ services:
       - ..:/workspace:cached
       - devcontainer-bashhistory:/commandhistory
       - devcontainer-nuget:/home/vscode/.nuget
+      # Mount Docker socket to allow Aspire to manage containers
+      - /var/run/docker.sock:/var/run/docker.sock
     privileged: true
     network_mode: host
     command: sleep infinity
 
-  # Ollama and Qdrant are optional - use external containers if already running
-  # To use these, run: docker-compose --profile services up -d
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ai-workshop-ollama
-    profiles: ["services"]
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    deploy:
-      resources:
-        limits:
-          memory: 8G
-
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: ai-workshop-qdrant
-    profiles: ["services"]
-    ports:
-      - "6333:6333"
-      - "6334:6334"
-    volumes:
-      - qdrant-data:/qdrant/storage
-    environment:
-      - QDRANT__SERVICE__GRPC_PORT=6334
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:6333/readyz || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+# Note: Ollama and Qdrant containers are managed by .NET Aspire AppHost
+# They will be started automatically when running the Aspire project
 
 volumes:
-  ollama-data:
-  qdrant-data:
   devcontainer-bashhistory:
   devcontainer-nuget:

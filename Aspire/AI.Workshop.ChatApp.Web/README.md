@@ -8,7 +8,7 @@ A Blazor Server application demonstrating RAG (Retrieval-Augmented Generation) c
 - **RAG Pipeline**: Search and chat with your PDF documents using semantic search
 - **Vector Storage**: Supports both Qdrant and SQLite for vector storage
 - **Aspire Orchestration**: Full .NET Aspire 13 integration for container orchestration
-- **GPU Acceleration**: Automatic GPU detection for NVIDIA, AMD, and Intel GPUs
+- **GPU Acceleration**: Automatic GPU detection for NVIDIA (CUDA), AMD and Intel (Vulkan on Windows, ROCm on Linux)
 
 ## Technology Stack
 
@@ -68,11 +68,22 @@ Set the `VECTOR_STORE` environment variable to choose your vector database:
 
 ### GPU Acceleration
 
-Set the `GPU_VENDOR` environment variable:
+The Aspire AppHost automatically detects GPU vendor and configures acceleration.
+
+**⚠️ Windows + Docker Limitation:**
+Docker Desktop uses WSL2 (Linux VM). Only **NVIDIA GPUs** can be passed through to containers. AMD/Intel GPUs will fall back to CPU mode in containers.
+
+| Host | GPU | Works in Container? |
+|------|-----|---------------------|
+| Windows | NVIDIA | ✅ Yes |
+| Windows | AMD/Intel | ❌ No (use native Ollama with `OLLAMA_VULKAN=1`) |
+| Linux | Any | ✅ Yes |
+
+Set the `GPU_VENDOR` environment variable to override:
 
 - `nvidia` - NVIDIA GPU (requires NVIDIA Container Toolkit)
-- `amd` - AMD GPU (requires ROCm drivers)
-- `intel` - Intel GPU (experimental)
+- `amd` - AMD GPU (Linux: ROCm, Windows: CPU fallback)
+- `intel` - Intel GPU (Linux: passthrough, Windows: CPU fallback)
 - `cpu` or `none` - CPU-only mode
 
 ## Adding Your Documents
