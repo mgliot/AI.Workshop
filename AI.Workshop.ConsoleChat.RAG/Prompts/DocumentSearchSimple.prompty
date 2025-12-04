@@ -1,0 +1,19 @@
+---
+name: Document Search Simple
+description: A simple assistant that answers questions from retrieved information
+authors:
+  - AI.Workshop
+model:
+  api: chat
+  configuration:
+    type: ollama
+    model: llama3.2
+sample:
+  question: What information is available about the topic?
+---
+system:
+You are an assistant who answers questions about information you retrieve.
+Use the search tool to find relevant information. Include citations when available.
+
+user:
+{{question}}

@@ -1,9 +1,7 @@
 ﻿using AI.Workshop.VectorStore;
-using Azure;
-using Azure.AI.OpenAI;
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.Configuration;
 using Microsoft.SemanticKernel.Connectors.InMemory;
+using OllamaSharp;
 
 namespace AI.Workshop.ConsoleChat.RAG;
 
@@ -14,27 +12,15 @@ internal class InMemoryVectorStoreSearch
 
     public InMemoryVectorStoreSearch()
     {
-        var config = new ConfigurationBuilder()
-        .AddUserSecrets<Program>()
-        .Build();
+        var ollamaUri = new Uri("http://localhost:11434/");
+        var embeddingModel = "all-minilm";
 
-        var endpoint = config["AZURE_OPENAI_ENDPOINT"];
-        var key = config["AZURE_OPENAI_KEY"];
-        var deployment = config["AZURE_EMBEDDING_DEPLOYMENT"];
-
-        var client = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(key));
-
-        var embeddingClient = client.GetEmbeddingClient(deployment);
-
-        _generator = embeddingClient.AsIEmbeddingGenerator();
+        // OllamaApiClient implements IEmbeddingGenerator
+        _generator = new OllamaApiClient(ollamaUri, embeddingModel);
     }
 
     internal async Task GenerateVectorsAsync()
     {
-        // Create and populate a vector store with the cloud service data.
-        // Use the IEmbeddingGenerator implementation to create and assign an embedding vector
-        // for each record in the cloud service data:
-
         var vectorStore = new InMemoryVectorStore();
         _cloudServicesStore = vectorStore.GetCollection<int, VectorModel>("cloudServices");
         await _cloudServicesStore.EnsureCollectionExistsAsync();
@@ -48,14 +34,9 @@ internal class InMemoryVectorStoreSearch
 
     public async Task SearchAsync(string text, int numberOfResults = 1)
     {
-        // Create an embedding for a search query and use it to perform a vector search on the vector store:
-
         var queryEmbedding = await _generator.GenerateVectorAsync(text);
 
         var results = _cloudServicesStore.SearchAsync(queryEmbedding, top: numberOfResults);
-
-        // The app prints out the top result of the vector search,
-        // which is the cloud service that's most relevant to the original query:
 
         await foreach (var result in results)
         {

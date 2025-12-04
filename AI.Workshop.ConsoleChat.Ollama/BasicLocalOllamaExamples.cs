@@ -8,19 +8,18 @@ namespace AI.Workshop.ConsoleChat.Ollama;
 internal class BasicLocalOllamaExamples
 {
     private readonly IChatClient _chatClient;
-    private readonly OllamaEmbeddingGenerator _embeddingGenerator;
+    private readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
 
     public BasicLocalOllamaExamples()
     {
         var ollamaUri = new Uri("http://localhost:11434/");
         var ollamaModel = "llama3.2";
+        var embeddingModel = "all-minilm";
 
         _chatClient = new OllamaApiClient(ollamaUri, ollamaModel);
 
-        _embeddingGenerator = new OllamaEmbeddingGenerator(
-            endpoint: ollamaUri,
-            modelId: "all-minilm",
-            httpClient: new HttpClient());
+        // OllamaApiClient implements IEmbeddingGenerator
+        _embeddingGenerator = new OllamaApiClient(ollamaUri, embeddingModel);
     }
 
     internal async Task BasicPromptWithHistoryAsync()
@@ -28,7 +27,7 @@ internal class BasicLocalOllamaExamples
         var clientBuilder = new ChatClientBuilder(_chatClient)
             .Build();
 
-        var systemPrompt = "You are a helpful assistant who suggests whick books to read.";
+        var systemPrompt = PromptyHelper.GetSystemPrompt("BookRecommendation");
         List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
 
         Console.ForegroundColor = ConsoleColor.Cyan;
@@ -74,7 +73,7 @@ internal class BasicLocalOllamaExamples
         var inMemoryStore = new InMemoryStore(_embeddingGenerator);
         await inMemoryStore.IngestDataAsync();
 
-        await foreach (var result in inMemoryStore.SearchAsync("Which Azure service should I use to store my Word documents?"));
+        await foreach (var result in inMemoryStore.SearchAsync("Which service should I use to store my documents?"));
     }
 
     internal async Task BasicRagWithLocalStoreSearchAsync()
@@ -83,10 +82,7 @@ internal class BasicLocalOllamaExamples
             .UseFunctionInvocation()
             .Build();
 
-        var systemPrompt = @"
-            You are a helpful assistant that suggests Azure services based on user's prompt.
-            Use exclusively 'SearchToolAsync' tool to search for information about Azure services.
-        ";
+        var systemPrompt = PromptyHelper.GetSystemPrompt("ServiceSuggestion");
 
         List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
 

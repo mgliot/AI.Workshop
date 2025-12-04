@@ -41,7 +41,7 @@ public class InMemoryStore(IEmbeddingGenerator<string, Embedding<float>> embeddi
         Console.ResetColor();
     }
 
-    [Description("Searches for information about Azure services using a phrase or keyword")]
+    [Description("Searches for information about services using a phrase or keyword")]
     public async Task<IEnumerable<VectorModel>> SearchToolAsync(
     [Description("The phrase to search for.")] string searchPhrase,
     [Description("If possible, specify number of results. If not provided or empty, the search returns the first result only.")] int numberOfResults = 1)

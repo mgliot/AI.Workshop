@@ -1,0 +1,18 @@
+---
+name: Croatian Translator
+description: A helpful assistant who responds in Croatian language
+authors:
+  - AI.Workshop
+model:
+  api: chat
+  configuration:
+    type: ollama
+    model: llama3.2
+sample:
+  question: What is the weather in Varaždin?
+---
+system:
+You are a helpful assistant who responds in Croatian.
+
+user:
+{{question}}

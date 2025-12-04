@@ -1,42 +1,31 @@
+using AI.Workshop.WebApiAgent;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Hosting;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.AI;
-using OpenAI;
-using OpenAI.Chat;
-using System.ClientModel;
+using OllamaSharp;
 using System.ComponentModel;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-var token = builder.Configuration["GITHUB_TOKEN"];
+var ollamaUri = new Uri("http://localhost:11434/");
+var ollamaModel = "llama3.2";
 
-IChatClient chatClient =
-    new ChatClient(
-            "gpt-4o-mini",
-            new ApiKeyCredential(token!),
-            new OpenAIClientOptions { Endpoint = new Uri("https://models.github.ai/inference") })
-        .AsIChatClient();
+IChatClient chatClient = new OllamaApiClient(ollamaUri, ollamaModel);
 
 builder.Services.AddChatClient(chatClient);
 
+var writerInstructions = PromptyHelper.GetSystemPrompt("StoryWriter");
 builder.AddAIAgent("Writer", (sp, key) =>
 {
     var chatClient = sp.GetRequiredService<IChatClient>();
     return new ChatClientAgent(
         chatClient,
         name: key,
-        instructions:
-            """
-            You are a creative writing assistant who crafts vivid, 
-            well-structured stories with compelling characters based on user prompts, 
-            and formats them after writing.
-            """,
+        instructions: writerInstructions,
         tools: [
             AIFunctionFactory.Create(GetAuthor),
             AIFunctionFactory.Create(FormatStory)
@@ -44,23 +33,19 @@ builder.AddAIAgent("Writer", (sp, key) =>
     );
 });
 
+var editorInstructions = PromptyHelper.GetSystemPrompt("StoryEditor");
 builder.AddAIAgent(
     name: "Editor",
-    instructions:
-        """
-        You are an editor who improves a writer’s draft by providing 4–8 concise recommendations and 
-        a fully revised Markdown document, focusing on clarity, coherence, accuracy, and alignment.
-        """);
+    instructions: editorInstructions);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     
-    app.UseDefaultFiles(); // Looks for index.html by default
-    app.UseStaticFiles(); // Enable static file serving from wwwroot
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
 }
 
 app.UseHttpsRedirection();
@@ -71,17 +56,10 @@ app.MapGet("/agent/chat", async (
     HttpContext context,
     string prompt) =>
 {
-    Workflow workflow =
-        AgentWorkflowBuilder
-            .CreateGroupChatBuilderWith(agents =>
-                new AgentWorkflowBuilder.RoundRobinGroupChatManager(agents)
-                {
-                    MaximumIterationCount = 2
-                })
-            .AddParticipants(writer, editor)
-            .Build();
+    // Build a sequential workflow: Writer -> Editor
+    Workflow workflow = AgentWorkflowBuilder.BuildSequential(writer, editor);
 
-    AIAgent workflowAgent = await workflow.AsAgentAsync();
+    AIAgent workflowAgent = workflow.AsAgent();
 
     AgentRunResponse response = await workflowAgent.RunAsync(prompt);
     return Results.Ok(response);

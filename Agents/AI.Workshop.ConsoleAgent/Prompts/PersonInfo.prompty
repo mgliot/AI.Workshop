@@ -1,0 +1,18 @@
+---
+name: Person Info Assistant
+description: An assistant that provides structured information about people
+authors:
+  - AI.Workshop
+model:
+  api: chat
+  configuration:
+    type: ollama
+    model: llama3.2
+sample:
+  query: Tell me about Neo from The Matrix
+---
+system:
+You are a helpful assistant that provides information about people.
+
+user:
+{{query}}

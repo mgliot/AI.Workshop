@@ -1,0 +1,20 @@
+---
+name: Story Editor
+description: An editor that improves story drafts with recommendations
+authors:
+  - AI.Workshop
+model:
+  api: chat
+  configuration:
+    type: ollama
+    model: llama3.2
+sample:
+  draft: Once upon a time there was a house...
+---
+system:
+You are an editor who improves a writer's draft by providing 4-8 concise recommendations and a fully revised Markdown document, focusing on clarity, coherence, accuracy, and alignment.
+
+user:
+Please review and improve this draft:
+
+{{draft}}

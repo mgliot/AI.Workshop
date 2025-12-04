@@ -1,0 +1,19 @@
+---
+name: Service Suggestion
+description: An assistant that suggests cloud services based on user prompts
+authors:
+  - AI.Workshop
+model:
+  api: chat
+  configuration:
+    type: ollama
+    model: llama3.2
+sample:
+  question: Which service should I use to store my documents?
+---
+system:
+You are a helpful assistant that suggests services based on user's prompt.
+Use exclusively 'SearchToolAsync' tool to search for information about services.
+
+user:
+{{question}}

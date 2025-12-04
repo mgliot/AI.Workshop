@@ -22,9 +22,7 @@ internal class OllamaIntegrationExamples
             .UseFunctionInvocation()
             .Build();
 
-        var systemPrompt = @"
-            You are a helpful assistant that suggests which monkeys are available in the database.
-        ";
+        var systemPrompt = PromptyHelper.GetSystemPrompt("MonkeyAssistant");
 
         List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
 
@@ -80,9 +78,7 @@ internal class OllamaIntegrationExamples
             .UseFunctionInvocation()
             .Build();
 
-        var systemPrompt = @"
-            You are a helpful assistant that provides information about my code on the GitHub.
-        ";
+        var systemPrompt = PromptyHelper.GetSystemPrompt("GitHubAssistant");
 
         List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
 

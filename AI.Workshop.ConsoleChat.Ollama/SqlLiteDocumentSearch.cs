@@ -11,21 +11,19 @@ namespace AI.Workshop.ConsoleChat.Ollama;
 internal class SqlLiteDocumentSearch
 {
     private readonly IChatClient _chatClient;
-    private readonly OllamaEmbeddingGenerator _embeddingGenerator;
-    private SemanticSearch _semanticSearch;
+    private readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
+    private SemanticSearch? _semanticSearch;
 
     public SqlLiteDocumentSearch()
     {
         var ollamaUri = new Uri("http://localhost:11434/");
         var ollamaModel = "llama3.2";
+        var embeddingModel = "all-minilm";
 
         _chatClient = new OllamaApiClient(ollamaUri, ollamaModel);
 
-        // Initialize the OllamaEmbeddingGenerator with the Ollama endpoint and model ID
-        _embeddingGenerator = new OllamaEmbeddingGenerator(
-            endpoint: ollamaUri,
-            modelId: "all-minilm",
-            httpClient: new HttpClient());
+        // OllamaApiClient implements IEmbeddingGenerator
+        _embeddingGenerator = new OllamaApiClient(ollamaUri, embeddingModel);
     }
 
     internal async Task BasicDocumentSearchAsync()
@@ -40,21 +38,7 @@ internal class SqlLiteDocumentSearch
             .UseFunctionInvocation()
             .Build();
 
-        var systemPrompt = @"
-        You are an assistant who answers questions about information you retrieve.
-        Do not answer questions about anything else.
-        Use only simple markdown to format your responses.
-
-        Use the search tool to find relevant information. When you do this, end your
-        reply with citations in the special XML format:
-
-        <citation filename='string' page_number='number'>exact quote here</citation>
-
-        Always include the citation in your response if there are results.
-
-        The quote must be max 5 words, taken word-for-word from the search result, and is the basis for why the citation is relevant.
-        Don't refer to the presence of citations; just emit these tags right at the end, with no surrounding text.
-        ";
+        var systemPrompt = PromptyHelper.GetSystemPrompt("DocumentSearch");
         List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
 
         Console.ForegroundColor = ConsoleColor.Cyan;

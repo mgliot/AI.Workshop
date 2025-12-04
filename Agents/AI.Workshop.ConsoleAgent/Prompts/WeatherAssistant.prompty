@@ -1,0 +1,18 @@
+---
+name: Weather Assistant
+description: A helpful assistant that provides weather information
+authors:
+  - AI.Workshop
+model:
+  api: chat
+  configuration:
+    type: ollama
+    model: llama3.2
+sample:
+  location: New York
+---
+system:
+You are a helpful assistant that provides weather information.
+
+user:
+What's the weather like in {{location}}?

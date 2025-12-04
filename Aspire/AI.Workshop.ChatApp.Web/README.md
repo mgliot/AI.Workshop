@@ -1,53 +1,123 @@
-# AI Chat with Custom Data
+# AI Workshop Chat Web Application
 
-This project is an AI chat application that demonstrates how to chat with custom data using an AI language model. Please note that this template is currently in an early preview stage. If you have feedback, please take a [brief survey](https://aka.ms/dotnet-chat-templatePreview2-survey).
+A Blazor Server application demonstrating RAG (Retrieval-Augmented Generation) chat with PDF documents using local AI models powered by Ollama and .NET Aspire.
 
->[!NOTE]
-> Before running this project you need to configure the API keys or endpoints for the providers you have chosen. See below for details specific to your choices.
+## Features
 
-### Known Issues
+- **Local AI Models**: Uses Ollama for both chat (`llama3.2`) and embeddings (`all-minilm`) - no cloud API keys required
+- **RAG Pipeline**: Search and chat with your PDF documents using semantic search
+- **Vector Storage**: Supports both Qdrant and SQLite for vector storage
+- **Aspire Orchestration**: Full .NET Aspire 13 integration for container orchestration
+- **GPU Acceleration**: Automatic GPU detection for NVIDIA, AMD, and Intel GPUs
 
-#### Errors running Ollama or Docker
+## Technology Stack
 
-A recent incompatibility was found between Ollama and Docker Desktop. This issue results in runtime errors when connecting to Ollama, and the workaround for that can lead to Docker not working for Aspire projects.
+| Component | Version |
+|-----------|---------|
+| .NET | 10.0 |
+| Aspire | 13.0.0 |
+| Ollama | Latest |
+| OllamaSharp | 5.4.11 |
+| Microsoft.Extensions.AI | 10.0.1 |
+| Qdrant | Latest |
 
-This incompatibility can be addressed by upgrading to Docker Desktop 4.41.1. See [ollama/ollama#9509](https://github.com/ollama/ollama/issues/9509#issuecomment-2842461831) for more information and a link to install the version of Docker Desktop with the fix.
+## Prerequisites
 
-# Configure the AI Model Provider
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- [Docker Desktop](https://www.docker.com/) (for Ollama and Qdrant containers)
+- Optional: NVIDIA/AMD/Intel GPU for accelerated inference
 
-## Setting up a local environment for Ollama
-This project is configured to run Ollama in a Docker container. Docker Desktop must be installed and running for the project to run successfully. An Ollama container will automatically start when running the application.
+## Project Structure
 
-Download, install, and run Docker Desktop from the [official website](https://www.docker.com/). Follow the installation instructions specific to your operating system.
+```
+Aspire/
+├── AI.Workshop.ChatApp.AppHost/     # Aspire orchestration host
+├── AI.Workshop.ChatApp.Web/         # Blazor Server web application
+└── AI.Workshop.ChatApp.ServiceDefaults/  # Shared service configuration
+```
 
-Note: Ollama and Docker are excellent open source products, but are not maintained by Microsoft.
+## Running the Application
 
+### Using Visual Studio
 
-# Running the application
+1. Open `AI.Workshop.sln` in Visual Studio
+2. Set `AI.Workshop.ChatApp.AppHost` as the startup project
+3. Press `F5` or click "Start"
 
-## Using Visual Studio
+### Using Command Line
 
-1. Open the `.sln` file in Visual Studio.
-2. Press `Ctrl+F5` or click the "Start" button in the toolbar to run the project.
+```bash
+dotnet run --project Aspire/AI.Workshop.ChatApp.AppHost
+```
 
-## Using Visual Studio Code
+### Using Visual Studio Code
 
-1. Open the project folder in Visual Studio Code.
-2. Install the [C# Dev Kit extension](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) for Visual Studio Code.
-3. Once installed, Open the `Program.cs` file in the AI.Workshop.ChatApp.AppHost project.
-4. Run the project by clicking the "Run" button in the Debug view.
+1. Open the project folder in VS Code
+2. Install the [C# Dev Kit extension](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit)
+3. Open `Program.cs` in the AppHost project
+4. Press `F5` to start debugging
 
-## Trust the localhost certificate
+## Configuration
 
-Several .NET Aspire templates include ASP.NET Core projects that are configured to use HTTPS by default. If this is the first time you're running the project, an exception might occur when loading the Aspire dashboard. This error can be resolved by trusting the self-signed development certificate with the .NET CLI.
+### Vector Store
 
-See [Troubleshoot untrusted localhost certificate in .NET Aspire](https://learn.microsoft.com/dotnet/aspire/troubleshooting/untrusted-localhost-certificate) for more information.
+Set the `VECTOR_STORE` environment variable to choose your vector database:
 
-# Updating JavaScript dependencies
+- `Qdrant` (default) - Uses Qdrant container for vector storage
+- `Sqlite` - Uses local SQLite database with vector extensions
 
-This template leverages JavaScript libraries to provide essential functionality. These libraries are located in the wwwroot/lib folder of the AI.Workshop.ChatApp.Web project. For instructions on updating each dependency, please refer to the README.md file in each respective folder.
+### GPU Acceleration
 
-# Learn More
-To learn more about development with .NET and AI, check out the following links:
+Set the `GPU_VENDOR` environment variable:
 
-* [AI for .NET Developers](https://learn.microsoft.com/dotnet/ai/)
+- `nvidia` - NVIDIA GPU (requires NVIDIA Container Toolkit)
+- `amd` - AMD GPU (requires ROCm drivers)
+- `intel` - Intel GPU (experimental)
+- `cpu` or `none` - CPU-only mode
+
+## Adding Your Documents
+
+Place PDF files in the `wwwroot/Data` folder. The application will automatically:
+
+1. Extract text from PDFs using PdfPig
+2. Chunk text into semantic paragraphs
+3. Generate embeddings using the `all-minilm` model
+4. Store vectors in the configured vector database
+
+## Architecture
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Blazor Web    │────▶│     Ollama      │────▶│   llama3.2      │
+│   Application   │     │   (Container)   │     │   all-minilm    │
+└────────┬────────┘     └─────────────────┘     └─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Qdrant/SQLite  │
+│  Vector Store   │
+└─────────────────┘
+```
+
+## Troubleshooting
+
+### Trust the localhost certificate
+
+If you encounter certificate errors on first run:
+
+```bash
+dotnet dev-certs https --trust
+```
+
+See [Troubleshoot untrusted localhost certificate](https://learn.microsoft.com/dotnet/aspire/troubleshooting/untrusted-localhost-certificate) for more details.
+
+### Docker/Ollama Issues
+
+Ensure Docker Desktop 4.41.1+ is installed. Earlier versions have compatibility issues with Ollama containers.
+
+## Learn More
+
+- [.NET Aspire Documentation](https://learn.microsoft.com/dotnet/aspire/)
+- [Ollama](https://ollama.ai/)
+- [Microsoft.Extensions.AI](https://learn.microsoft.com/dotnet/ai/)
+- [Qdrant Vector Database](https://qdrant.tech/)

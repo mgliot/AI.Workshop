@@ -2,22 +2,28 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.AI.Ollama" Version="9.7.0-preview.1.25356.2" />
-    <PackageReference Include="Microsoft.SemanticKernel.Connectors.Qdrant" Version="1.64.0-preview" />
-    <PackageReference Include="Microsoft.SemanticKernel.Connectors.SqliteVec" Version="1.61.0-preview" />
-    <PackageReference Include="OllamaSharp" Version="5.3.3" />
-	<PackageReference Include="Microsoft.Extensions.AI" Version="9.7.1" />
-	<PackageReference Include="Qdrant.Client" Version="1.15.1" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.Qdrant" Version="1.67.1-preview" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.SqliteVec" Version="1.67.1-preview" />
+    <PackageReference Include="OllamaSharp" Version="5.4.11" />
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.0.1" />
+    <PackageReference Include="Qdrant.Client" Version="1.15.1" />
+    <PackageReference Include="Prompty.Core" Version="0.2.3-beta" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AI.Workshop.VectorStore\AI.Workshop.VectorStore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Prompts\*.prompty">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

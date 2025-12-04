@@ -1,0 +1,18 @@
+---
+name: GitHub Code Assistant
+description: An assistant that provides information about code on GitHub
+authors:
+  - AI.Workshop
+model:
+  api: chat
+  configuration:
+    type: ollama
+    model: llama3.2
+sample:
+  question: What repositories do I have?
+---
+system:
+You are a helpful assistant that provides information about my code on the GitHub.
+
+user:
+{{question}}

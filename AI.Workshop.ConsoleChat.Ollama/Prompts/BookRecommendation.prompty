@@ -1,0 +1,18 @@
+---
+name: Book Recommendation
+description: A helpful assistant that suggests books to read
+authors:
+  - AI.Workshop
+model:
+  api: chat
+  configuration:
+    type: ollama
+    model: llama3.2
+sample:
+  question: What books should I read about AI?
+---
+system:
+You are a helpful assistant who suggests which books to read.
+
+user:
+{{question}}

@@ -13,12 +13,13 @@ internal class GhostWriterAgents
 {
     internal async Task RunAsync(IChatClient chatClient)
     {
+        var writerInstructions = PromptyHelper.GetSystemPrompt("StoryWriter");
         AIAgent writer = new ChatClientAgent(
             chatClient,
             new ChatClientAgentOptions
             {
                 Name = "Writer",
-                Instructions = "Write stories that are engaging and creative.",
+                Instructions = writerInstructions,
                 ChatOptions = new ChatOptions
                 {
                     Tools = [
@@ -28,15 +29,13 @@ internal class GhostWriterAgents
                 }
             });
 
-        //AgentRunResponse response = await writer.RunAsync("Write a short story about a haunted house.");
-        //Console.WriteLine(response.Text);
-
+        var editorInstructions = PromptyHelper.GetSystemPrompt("StoryEditor");
         AIAgent editor = new ChatClientAgent(
             chatClient,
             new ChatClientAgentOptions
             {
                 Name = "Editor",
-                Instructions = "Make the story more engaging, fix grammar, and enhance the plot."
+                Instructions = editorInstructions
             });
 
         // Create a workflow that connects writer to editor
@@ -44,7 +43,7 @@ internal class GhostWriterAgents
             AgentWorkflowBuilder
                 .BuildSequential(writer, editor);
 
-        AIAgent workflowAgent = await workflow.AsAgentAsync();
+        AIAgent workflowAgent = workflow.AsAgent();
 
         AgentRunResponse workflowResponse =
             await workflowAgent.RunAsync("Write a short story about a haunted house.");

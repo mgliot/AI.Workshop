@@ -4,6 +4,12 @@
 * text=auto
 
 ###############################################################################
+# Force Unix line endings for shell scripts (required for devcontainer)
+###############################################################################
+*.sh text eol=lf
+.devcontainer/** text eol=lf
+
+###############################################################################
 # Set default behavior for command prompt diff.
 #
 # This is need for earlier builds of msysgit that does not have it on by

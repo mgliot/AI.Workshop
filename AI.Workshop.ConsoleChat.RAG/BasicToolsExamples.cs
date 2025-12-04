@@ -1,7 +1,5 @@
-﻿using Azure;
-using Azure.AI.OpenAI;
-using Microsoft.Extensions.AI;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.AI;
+using OllamaSharp;
 using System.ComponentModel;
 
 namespace AI.Workshop.ConsoleChat.RAG;
@@ -12,17 +10,10 @@ internal class BasicToolsExamples
 
     public BasicToolsExamples()
     {
-        var config = new ConfigurationBuilder()
-            .AddUserSecrets<Program>()
-            .Build();
+        var ollamaUri = new Uri("http://localhost:11434/");
+        var ollamaModel = "llama3.2";
 
-        var endpoint = config["AZURE_OPENAI_ENDPOINT"];
-        var key = config["AZURE_OPENAI_KEY"];
-        var deployment = config["AZURE_OPENAI_DEPLOYMENT"];
-
-        _client = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(key))
-            .GetChatClient(deployment)
-            .AsIChatClient();
+        _client = new OllamaApiClient(ollamaUri, ollamaModel);
     }
 
     internal async Task ItemPriceMethod()

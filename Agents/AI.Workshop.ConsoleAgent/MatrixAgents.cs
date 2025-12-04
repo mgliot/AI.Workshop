@@ -16,33 +16,20 @@ internal class MatrixAgents
 {
     internal async Task GivePromptAsync(IChatClient chatClient)
     {
+        var instructions = PromptyHelper.GetSystemPrompt("AgentSmith");
         AIAgent agentSmith = chatClient.CreateAIAgent(
-            instructions: "You are Agent Smith from the Matrix. You are a highly intelligent and articulate AI who speaks in a formal and somewhat archaic manner. You have a deep understanding of philosophy, technology, and human nature. Your primary goal is to assist users by providing insightful and thought-provoking responses, often drawing parallels to the themes of control, freedom, and reality.",
+            instructions: instructions,
             name: "AgentSmith"
             );
 
         Console.WriteLine(await agentSmith.RunAsync("What is the matrix?"));
     }
 
-    internal async Task DescribePhotoAsync(IChatClient chatClient)
-    {
-        AIAgent agentSmith = chatClient.CreateAIAgent(
-            instructions: "You are Agent Smith from the Matrix. You are a highly intelligent and articulate AI who speaks in a formal and somewhat archaic manner. You have a deep understanding of philosophy, technology, and human nature. Your primary goal is to assist users by providing insightful and thought-provoking responses, often drawing parallels to the themes of control, freedom, and reality.",
-            name: "AgentSmith"
-            );
-
-        ChatMessage message = new(ChatRole.User, [
-            new TextContent("Tell me what do you know about this photo?"),
-            new UriContent("https://miro.medium.com/v2/resize:fit:1400/1*heL-f8bPywxsNG2snNPIwQ.jpeg", "image/jpeg")
-            ]);
-
-        Console.WriteLine(await agentSmith.RunAsync(message));
-    }
-
     internal async Task MultiTurnConversationAsync(IChatClient chatClient)
     {
+        var instructions = PromptyHelper.GetSystemPrompt("AgentSmith");
         AIAgent agentSmith = chatClient.CreateAIAgent(
-            instructions: "You are Agent Smith from the Matrix. You are a highly intelligent and articulate AI who speaks in a formal and somewhat archaic manner. You have a deep understanding of philosophy, technology, and human nature. Your primary goal is to assist users by providing insightful and thought-provoking responses, often drawing parallels to the themes of control, freedom, and reality.",
+            instructions: instructions,
             name: "AgentSmith"
             );
 
@@ -57,8 +44,9 @@ internal class MatrixAgents
 
     internal async Task FunctionCallingAsync(IChatClient chatClient)
     {
+        var instructions = PromptyHelper.GetSystemPrompt("WeatherAssistant");
         AIAgent weatherAgent = chatClient.CreateAIAgent(
-            instructions: "You are a helpful assistant that provides weather information.",
+            instructions: instructions,
             tools: [AIFunctionFactory.Create(GetWeather)]
             );
 
@@ -79,27 +67,30 @@ internal class MatrixAgents
                 "Information about a person including their name, age, and occupation")
         };
 
+        var instructions = PromptyHelper.GetSystemPrompt("PersonInfo");
         AIAgent structuredAgent = chatClient.CreateAIAgent(new ChatClientAgentOptions()
         {
             Name = "PersonInfoAgent",
-            Instructions = "You are a helpful assistant that provides information about people.",
+            Instructions = instructions,
             ChatOptions = chatOptions
         });
 
-        var response = await structuredAgent.RunAsync("Tell me about Neo from The Matrix."); // Carlo Acutis
+        var response = await structuredAgent.RunAsync("Tell me about Neo from The Matrix.");
         var personInfo = JsonSerializer.Deserialize<PersonInfo>(response.Text);
         Console.WriteLine($"Name: {personInfo?.Name}, Age: {personInfo?.Age}, Occupation: {personInfo?.Occupation}");
     }
 
     internal async Task UseAgentAsToolAsync(IChatClient chatClient)
     {
+        var weatherInstructions = PromptyHelper.GetSystemPrompt("WeatherAssistant");
         AIAgent weatherAgent = chatClient.CreateAIAgent(
-            instructions: "You are a helpful assistant that provides weather information.",
+            instructions: weatherInstructions,
             tools: [AIFunctionFactory.Create(GetWeather)]
         );
 
+        var croatianInstructions = PromptyHelper.GetSystemPrompt("CroatianTranslator");
         AIAgent croatianAgent = chatClient.CreateAIAgent(
-            instructions: "You are a helpful assistant who responds in Croatian.",
+            instructions: croatianInstructions,
             name: "CroatianTranslator",
             tools: [weatherAgent.AsAIFunction()]
             );

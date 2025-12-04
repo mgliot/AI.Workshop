@@ -1,8 +1,9 @@
-﻿using AI.Workshop.ConsoleChat.RAG.Tools;
-using Azure;
-using Azure.AI.OpenAI;
+using AI.Workshop.ConsoleChat.RAG.Tools;
+using AI.Workshop.VectorStore.Ingestion;
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.VectorData;
+using Microsoft.SemanticKernel.Connectors.SqliteVec;
+using OllamaSharp;
 using System.Text;
 using System.Text.Json;
 
@@ -10,11 +11,11 @@ namespace AI.Workshop.ConsoleChat.RAG;
 
 internal class RagWorkflowExamples
 {
-    protected readonly AzureOpenAIClient _innerClient;
     protected readonly IChatClient _client;
-    private readonly IConfigurationRoot _configuration;
+    private readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
 
     private readonly string _systemPrompt;
+    private SemanticSearch? _semanticSearch;
 
     private readonly ChatOptions _chatOptions = new()
     {
@@ -29,28 +30,16 @@ internal class RagWorkflowExamples
 
     public RagWorkflowExamples()
     {
-        var config = new ConfigurationBuilder()
-            .AddUserSecrets<Program>()
-            .AddJsonFile("Prompts.json", false, false)
-            .Build();
+        var ollamaUri = new Uri("http://localhost:11434/");
+        var ollamaModel = "llama3.2";
+        var embeddingModel = "all-minilm";
 
-        var openAiEndpoint = config["AZURE_OPENAI_ENDPOINT"];
-        var openAiKey = config["AZURE_OPENAI_KEY"];
-        var deployment = config["AZURE_OPENAI_DEPLOYMENT"];
-        var searchEndpoint = config["AZURE_SEARCH_ENDPOINT"];
-        var searchKey = config["AZURE_SEARCH_KEY"];
+        _client = new OllamaApiClient(ollamaUri, ollamaModel);
 
-        var section = config.GetSection("Prompts:OpenAISystemPrompt");
-        _systemPrompt = string.Join("", section.GetChildren().Select(x => x.Value));
+        // OllamaApiClient implements IEmbeddingGenerator - create a separate client for embeddings
+        _embeddingGenerator = new OllamaApiClient(ollamaUri, embeddingModel);
 
-        var client = new AzureOpenAIClient(new Uri(openAiEndpoint), new AzureKeyCredential(openAiKey));
-        
-        _innerClient = client;
-        _configuration = config;
-
-        _client = client
-            .GetChatClient(deployment)
-            .AsIChatClient();
+        _systemPrompt = PromptyHelper.GetSystemPrompt("GeneralAssistant");
     }
 
     internal async Task InitialMessageLoopAsync()
@@ -66,7 +55,6 @@ internal class RagWorkflowExamples
 
         while (true)
         {
-            // Get input
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("\nQ: ");
             var input = Console.ReadLine()!;
@@ -114,13 +102,10 @@ internal class RagWorkflowExamples
             name: "CurrentTime",
             description: "Returns the current date and time for Central European Time Zone. This tool needs no parameters.");
 
-        //var currentTimeTool = AIFunctionFactory.Create(CurrentTimeTool.InvokesAsync);
-
         _chatOptions.Tools!.Add(currentTimeTool);
 
         while (true)
         {
-            // Get input
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("\nQ: ");
             var input = Console.ReadLine()!;
@@ -150,25 +135,106 @@ internal class RagWorkflowExamples
         }
     }
 
-    internal async Task RagWithToolDefinitionsAsync()
+    internal async Task RagWithDocumentSearchAsync(string userPrompt)
     {
+        var store = new SqliteVectorStore("Data Source=vector-store.db",
+            new SqliteVectorStoreOptions() { EmbeddingGenerator = _embeddingGenerator });
+
+        VectorStoreCollection<string, IngestedChunk> chunks = store.GetCollection<string, IngestedChunk>("chunks");
+        VectorStoreCollection<string, IngestedDocument> documents = store.GetCollection<string, IngestedDocument>("documents");
+
+        var dataIngestor = new DataIngestor(_embeddingGenerator, chunks, documents);
+        await dataIngestor.IngestDataAsync(new PDFDirectorySource(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data")));
+
+        _semanticSearch = new SemanticSearch(chunks);
+
         var clientBuilder = new ChatClientBuilder(_client)
             .UseFunctionInvocation()
             .Build();
 
-        List<ChatMessage> history = [new(ChatRole.System, _systemPrompt)];
+        var systemPrompt = PromptyHelper.GetSystemPrompt("DocumentSearch");
+
+        List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
 
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine(_systemPrompt);
+        Console.WriteLine(systemPrompt);
         Console.ResetColor();
 
-        AddToolDefinition("CurrentTimeToolPrompts", new CurrentTimeTool() as IChatTool);
-        AddToolDefinition("AzureAISearchInhaltIndexToolPrompts", new AzureAISearchInhaltIndexToolMock()); 
-        AddToolDefinition("AzureAISearchKnowledgeBaseToolPrompts", new AzureAISearchKnowledgeBaseToolMock());
+        var chatOptions = new ChatOptions
+        {
+            Tools = [
+                AIFunctionFactory.Create(SearchAsync),
+                AIFunctionFactory.Create(new CurrentTimeTool().InvokeAsync, "CurrentTime", "Returns the current date and time.")
+            ]
+        };
+
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine($"\nQ: {userPrompt}");
+        history.Add(new(ChatRole.User, userPrompt));
+
+        var streamingResponse = clientBuilder.GetStreamingResponseAsync(history, chatOptions);
+
+        var messageBuilder = new StringBuilder();
+        await foreach (var update in streamingResponse)
+        {
+            if (update.FinishReason == ChatFinishReason.ToolCalls)
+            {
+                foreach (var functionCall in update.Contents.OfType<FunctionCallContent>())
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"\nTool Call: {functionCall.Name}");
+
+                    var parameters = functionCall.Arguments;
+                    var json = JsonSerializer.Serialize(parameters, new JsonSerializerOptions { WriteIndented = true });
+                    Console.WriteLine(json);
+                    Console.ResetColor();
+                }
+            }
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write(update.Text);
+            messageBuilder.Append(update.Text);
+        }
+
+        history.Add(new(ChatRole.Assistant, messageBuilder.ToString()));
+        Console.ResetColor();
+    }
+
+    internal async Task RagWithDocumentSearchLoopAsync()
+    {
+        var store = new SqliteVectorStore("Data Source=vector-store.db",
+            new SqliteVectorStoreOptions() { EmbeddingGenerator = _embeddingGenerator });
+
+        VectorStoreCollection<string, IngestedChunk> chunks = store.GetCollection<string, IngestedChunk>("chunks");
+        VectorStoreCollection<string, IngestedDocument> documents = store.GetCollection<string, IngestedDocument>("documents");
+
+        var dataIngestor = new DataIngestor(_embeddingGenerator, chunks, documents);
+        await dataIngestor.IngestDataAsync(new PDFDirectorySource(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data")));
+
+        _semanticSearch = new SemanticSearch(chunks);
+
+        var clientBuilder = new ChatClientBuilder(_client)
+            .UseFunctionInvocation()
+            .Build();
+
+        var systemPrompt = PromptyHelper.GetSystemPrompt("DocumentSearchSimple");
+
+        List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
+
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine(systemPrompt);
+        Console.ResetColor();
+
+        var chatOptions = new ChatOptions
+        {
+            Tools = [
+                AIFunctionFactory.Create(SearchAsync),
+                AIFunctionFactory.Create(new CurrentTimeTool().InvokeAsync, "CurrentTime", "Returns the current date and time.")
+            ]
+        };
 
         while (true)
         {
-            // Get input
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("\nQ: ");
             var input = Console.ReadLine()!;
@@ -183,12 +249,14 @@ internal class RagWorkflowExamples
 
             history.Add(new(ChatRole.User, input));
 
-            var streamingResponse = clientBuilder.GetStreamingResponseAsync(history, _chatOptions);
+            var streamingResponse = clientBuilder.GetStreamingResponseAsync(history, chatOptions);
 
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("A: ");
             var messageBuilder = new StringBuilder();
+
             await foreach (var chunk in streamingResponse)
             {
-                Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.Write(chunk.Text);
                 messageBuilder.Append(chunk.Text);
             }
@@ -198,260 +266,13 @@ internal class RagWorkflowExamples
         }
     }
 
-    internal async Task RagWithSearchToolsByDefaultAsync(string userPrompt)
+    [System.ComponentModel.Description("Searches for information using a phrase or keyword")]
+    private async Task<IEnumerable<string>> SearchAsync(
+        [System.ComponentModel.Description("The phrase to search for.")] string searchPhrase,
+        [System.ComponentModel.Description("If possible, specify the filename to search that file only. If not provided or empty, the search includes all files.")] string? filenameFilter = null)
     {
-        var clientBuilder = new ChatClientBuilder(_client)
-            .UseFunctionInvocation()
-            .Build();
-
-        List<ChatMessage> history = [new(ChatRole.System, _systemPrompt)];
-
-        Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine(_systemPrompt);
-        Console.ResetColor();
-
-        AddToolDefinition("CurrentTimeToolPrompts", new CurrentTimeTool() as ISearchChatTool);
-        AddToolDefinition("AzureAISearchInhaltIndexToolPrompts", new AzureAISearchInhaltIndexTool(_innerClient, _configuration));
-        AddToolDefinition("AzureAISearchKnowledgeBaseToolPrompts", new AzureAISearchKnowledgeBaseTool(_innerClient, _configuration));
-
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.WriteLine($"\nQ: {userPrompt}");
-        history.Add(new(ChatRole.User, userPrompt));
-        
-        var streamingResponse = clientBuilder.GetStreamingResponseAsync(history, _chatOptions);
-
-        var messageBuilder = new StringBuilder();
-        await foreach (var update in streamingResponse)
-        {
-            if (update.FinishReason == ChatFinishReason.ToolCalls)
-            {
-                foreach (var functionCall in update.Contents.OfType<FunctionCallContent>())
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"\nTool Call: {functionCall.Name}");
-
-                    var parameters = functionCall.Arguments;
-                    var json = JsonSerializer.Serialize(parameters, new JsonSerializerOptions { WriteIndented = true });
-                    Console.WriteLine(json);
-                    Console.ResetColor();
-                }
-            }
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write(update.Text);
-            messageBuilder.Append(update.Text);
-        }
-
-        history.Add(new(ChatRole.Assistant, messageBuilder.ToString()));
-        Console.ResetColor();
-    }
-
-    internal async Task RagWithSearchToolsCustomizedAsync(string userPrompt)
-    {
-        var clientBuilder = new ChatClientBuilder(_client)
-            .UseFunctionInvocation()
-            .Build();
-
-        List<ChatMessage> history = [new(ChatRole.System, _systemPrompt)];
-
-        Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine(_systemPrompt);
-        Console.ResetColor();
-
-        history.Add(new(ChatRole.Assistant, "“Tools must be invoked using all relevant user intent. Parameters for tool methods are inferred from semantic labels and descriptions.”"));
-
-        var summary = AggregateHistoryToString(history);
-
-        AddToolDefinition("CurrentTimeToolPrompts", new CurrentTimeTool() as ISearchChatTool);
-        AddToolDefinition("AzureAISearchInhaltIndexToolPrompts", new AzureAISearchInhaltIndexTool(_innerClient, _configuration, summary));
-        AddToolDefinition("AzureAISearchKnowledgeBaseToolPrompts", new AzureAISearchKnowledgeBaseTool(_innerClient, _configuration, summary));
-
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.WriteLine($"\nQ: {userPrompt}");
-        history.Add(new(ChatRole.User, userPrompt));
-
-        var streamingResponse = clientBuilder.GetStreamingResponseAsync(history, _chatOptions);
-
-        var messageBuilder = new StringBuilder();
-        await foreach (var update in streamingResponse)
-        {
-            if (update.FinishReason == ChatFinishReason.ToolCalls)
-            {
-                foreach (var functionCall in update.Contents.OfType<FunctionCallContent>())
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"\nTool Call: {functionCall.Name}");
-
-                    //functionCall.Arguments.TryGetValue("query", out var query);
-                    //query = summary ?? query?.ToString();
-                    //functionCall.Arguments.TryGetValue("top", out var top);
-                    //top = 5;
-
-                    //functionCall.Arguments!["query"] = summary;
-                    //functionCall.Arguments["top"] = 5;
-
-                    var parameters = functionCall.Arguments;
-                    var json = JsonSerializer.Serialize(parameters, new JsonSerializerOptions { WriteIndented = true });
-                    Console.WriteLine(json);
-                    Console.ResetColor();
-                }
-            }
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write(update.Text);
-            messageBuilder.Append(update.Text);
-        }
-
-        history.Add(new(ChatRole.Assistant, messageBuilder.ToString()));
-        Console.ResetColor();
-    }
-
-    private static string AggregateHistoryToString(List<ChatMessage> history)
-    {
-        var sb = new StringBuilder();
-
-        foreach (var message in history)
-        {
-            sb.AppendLine($"[{message.Role}] {message.Text}");
-        }
-
-        return sb.ToString();
-    }
-
-    private void AddToolDefinition(string sectionName, IChatTool tool)
-    {
-        var section = _configuration.GetSection(sectionName);
-
-        if (section == null || !section.Exists())
-        {
-            throw new ArgumentException($"Tool definition section '{sectionName}' not found in configuration.");
-        }
-
-        var factoryOptions = new AIFunctionFactoryOptions
-        {
-            Name = section["Name"],
-            Description = string.Join("", section.GetSection("Description").GetChildren().Select(x => x.Value))
-        };
-
-        //Dictionary<string, object> parameters = [];
-
-        //var queryParameter = section.GetSection("queryParameterDescription").GetChildren();
-
-        //if (queryParameter.Any())
-        //{
-        //    parameters.Add("query", string.Join("", queryParameter.Select(x => x.Value)));
-        //}
-        
-        //var topParameter = section.GetSection("topParameterDescription").GetChildren();
-
-        //if (topParameter.Any()) {
-        //    parameters.Add("top", string.Join("", topParameter.Select(x => x.Value)));
-        //}
-
-        //factoryOptions.AdditionalProperties = parameters;
-
-        var aiFunction = AIFunctionFactory.Create(
-            method: tool.InvokeAsync,
-            factoryOptions);
-
-        _chatOptions.Tools!.Add(aiFunction);
-    }
-
-    private void AddToolDefinition(string sectionName, ISearchChatTool tool)
-    {
-        var section = _configuration.GetSection(sectionName);
-
-        if (section == null || !section.Exists())
-        {
-            throw new ArgumentException($"Tool definition section '{sectionName}' not found in configuration.");
-        }
-
-        var factoryOptions = new AIFunctionFactoryOptions
-        {
-            Name = section["Name"],
-            Description = string.Join("", section.GetSection("Description").GetChildren().Select(x => x.Value))
-        };
-
-        var aiFunction = AIFunctionFactory.Create(
-            method: tool.SearchDocumentsWithQueryAndTop,
-            factoryOptions);
-
-        _chatOptions.Tools!.Add(aiFunction);
-    }
-
-    private void AddToolDefinitionFixed(string sectionName, ISearchChatTool tool)
-    {
-        var section = _configuration.GetSection(sectionName);
-
-        if (section == null || !section.Exists())
-        {
-            throw new ArgumentException($"Tool definition section '{sectionName}' not found in configuration.");
-        }
-
-        //var schema = BinaryData.FromString("""
-        //{
-        //    "type": "object",
-        //    "properties": {
-        //        "Movies": {
-        //            "type": "array",
-        //            "items": {
-        //                "type": "object",
-        //                "properties": {
-        //                    "Title": { "type": "string" },
-        //                    "Director": { "type": "string" },
-        //                    "ReleaseYear": { "type": "integer" },
-        //                    "Rating": { "type": "number" },
-        //                    "IsAvailableOnStreaming": { "type": "boolean" },
-        //                    "Tags": { "type": "array", "items": { "type": "string" } }
-        //                },
-        //                "required": ["Title", "Director", "ReleaseYear", "Rating", "IsAvailableOnStreaming", "Tags"],
-        //                "additionalProperties": false
-        //            }
-        //        }
-        //    },
-        //    "required": ["Movies"],
-        //    "additionalProperties": false
-        //}
-        //""");
-
-        var factoryOptions = new AIFunctionFactoryOptions
-        {
-            Name = section["Name"],
-            Description = string.Join("", section.GetSection("Description").GetChildren().Select(x => x.Value)),
-            //ConfigureParameterBinding = (parameter) =>
-            //{
-            //    var options = new ParameterBindingOptions
-            //    {
-            //        BindParameter = (param, context) =>
-            //        {
-            //            if (param.Name == "query")
-            //            {
-            //                return context.GetValueOrDefault("query") ?? "default query";
-            //            }
-            //            else if (param.Name == "top")
-            //            {
-            //                return context.GetValueOrDefault("top") ?? 5;
-            //            }
-            //            return null;
-            //        },
-            //    };
-
-            //    return options;
-            //},
-        };
-
-        var aiFunction = AIFunctionFactory.Create(
-            method: tool.SearchDocumentsWithQueryAndTop,
-            factoryOptions);
-
-        //tool.InvokeAsync(new AIFunctionArguments {
-        //    ["parameters"] = new Dictionary<string, object>
-        //    {
-        //        ["query"] = "I'm testing. Fetch me one article from your knowledge base, a seminar from inhalt index and tell me the current time.",
-        //        ["top"] = 5
-        //    }
-        //});
-
-        _chatOptions.Tools!.Add(aiFunction);
+        var results = await _semanticSearch.SearchAsync(searchPhrase, filenameFilter, maxResults: 5);
+        return results.Select(result =>
+            $"<result filename=\"{result.DocumentId}\" page_number=\"{result.PageNumber}\">{result.Text}</result>");
     }
 }
