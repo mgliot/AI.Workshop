@@ -1,0 +1,55 @@
+@using AI.Workshop.ChatApp.Web.Services
+
+<div class="stats-bar">
+    <div class="stats-section">
+        <span class="stats-icon">⏱️</span>
+        <span class="stats-label">Response:</span>
+        <span class="stats-value">@Stats.FormatResponseTime()</span>
+    </div>
+
+    <div class="stats-section">
+        <span class="stats-icon">📊</span>
+        <span class="stats-label">Tokens:</span>
+        <span class="stats-value">@Stats.FormatTokens()</span>
+    </div>
+
+    @if (Stats.ToonComparison != null)
+    {
+        <div class="stats-section toon-stats">
+            <span class="stats-icon">📝</span>
+            <span class="stats-label">Format:</span>
+            @if (ToonEnabled)
+            {
+                <span class="stats-value toon-active">
+                    TOON (@Stats.ToonComparison.ToonLength chars)
+                </span>
+                <span class="stats-comparison">
+                    vs XML (@Stats.ToonComparison.XmlLength chars)
+                </span>
+                <span class="stats-savings positive">
+                    ▼ @Stats.ToonComparison.SavingsPercent.ToString("F1")% saved
+                </span>
+            }
+            else
+            {
+                <span class="stats-value xml-active">
+                    XML (@Stats.ToonComparison.XmlLength chars)
+                </span>
+                <span class="stats-comparison">
+                    vs TOON (@Stats.ToonComparison.ToonLength chars)
+                </span>
+                <span class="stats-savings negative">
+                    ▲ @Stats.ToonComparison.SavingsPercent.ToString("F1")% extra
+                </span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public required ResponseStats Stats { get; set; }
+
+    [Parameter]
+    public bool ToonEnabled { get; set; }
+}

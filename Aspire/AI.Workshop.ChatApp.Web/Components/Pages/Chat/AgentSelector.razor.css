@@ -1,0 +1,55 @@
+.agent-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-secondary, #1a1a2e);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.agent-selector-label {
+    font-size: 0.875rem;
+    color: var(--text-muted, #a1a1aa);
+    white-space: nowrap;
+}
+
+.agent-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.agent-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+    border-radius: 6px;
+    background: var(--bg-tertiary, #16213e);
+    color: var(--text-muted, #a1a1aa);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.agent-btn:hover {
+    background: rgba(79, 70, 229, 0.2);
+    border-color: var(--primary-color, #4f46e5);
+    color: var(--text-color, #e4e4e7);
+}
+
+.agent-btn.active {
+    background: var(--primary-color, #4f46e5);
+    border-color: var(--primary-color, #4f46e5);
+    color: #ffffff;
+}
+
+.agent-icon {
+    font-size: 1.125rem;
+}
+
+.agent-name {
+    font-weight: 500;
+}

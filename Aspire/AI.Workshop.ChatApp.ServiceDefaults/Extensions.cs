@@ -67,7 +67,8 @@ public static class Extensions
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation()
-                    .AddMeter("Experimental.Microsoft.Extensions.AI");
+                    .AddMeter("Experimental.Microsoft.Extensions.AI")
+                    .AddMeter("AI.Workshop.Guardrails");  // Guardrails metrics
             })
             .WithTracing(tracing =>
             {
@@ -76,7 +77,8 @@ public static class Extensions
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddSource("Experimental.Microsoft.Extensions.AI");
+                    .AddSource("Experimental.Microsoft.Extensions.AI")
+                    .AddSource("AI.Workshop.Guardrails");  // Guardrails tracing
             });
 
         builder.AddOpenTelemetryExporters();

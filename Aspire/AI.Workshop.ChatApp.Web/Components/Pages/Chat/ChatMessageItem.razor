@@ -76,11 +76,11 @@ else if (Message.Role == ChatRole.Assistant)
         }
     }
 
-    public static void NotifyChanged(ChatMessage source)
+    public static async Task NotifyChangedAsync(ChatMessage source)
     {
         if (SubscribersLookup.TryGetValue(source, out var subscriber))
         {
-            subscriber.StateHasChanged();
+            await subscriber.InvokeAsync(subscriber.StateHasChanged);
         }
     }
 

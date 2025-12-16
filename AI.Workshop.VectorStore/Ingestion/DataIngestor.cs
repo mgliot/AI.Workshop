@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.VectorData;
 
 namespace AI.Workshop.VectorStore.Ingestion;
@@ -6,19 +8,22 @@ namespace AI.Workshop.VectorStore.Ingestion;
 public class DataIngestor(
     IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
     VectorStoreCollection<string, IngestedChunk> chunksCollection,
-    VectorStoreCollection<string, IngestedDocument> documentsCollection) 
-    : DataIngestor<string, IngestedDocument, IngestedChunk>(embeddingGenerator, chunksCollection, documentsCollection)
+    VectorStoreCollection<string, IngestedDocument> documentsCollection,
+    ILogger<DataIngestor>? logger = null) 
+    : DataIngestor<string, IngestedDocument, IngestedChunk>(embeddingGenerator, chunksCollection, documentsCollection, logger)
 {
 }
 
 public abstract class DataIngestor<TKey, TDocument, TChunk>(
     IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
     VectorStoreCollection<TKey, TChunk> chunksCollection,
-    VectorStoreCollection<TKey, TDocument> documentsCollection) 
+    VectorStoreCollection<TKey, TDocument> documentsCollection,
+    ILogger? logger = null) 
     where TKey : notnull
     where TDocument : class, IIngestedDocument<TKey>
     where TChunk : class, IIngestedChunk<TKey>
 {
+    private readonly ILogger _logger = logger ?? NullLogger.Instance;
     public VectorStoreCollection<TKey, TChunk> Chunks => chunksCollection;
 
     public async Task IngestDataAsync(IIngestionSource<TDocument, TChunk> source)
@@ -32,7 +37,7 @@ public abstract class DataIngestor<TKey, TDocument, TChunk>(
         var deletedDocuments = await source.GetDeletedDocumentsAsync(documentsForSource);
         foreach (var deletedDocument in deletedDocuments)
         {
-            Console.WriteLine("Removing ingested data for {0}", deletedDocument.DocumentId);
+            _logger.LogInformation("Removing ingested data for {DocumentId}", deletedDocument.DocumentId);
             await DeleteChunksForDocumentAsync(deletedDocument);
             await documentsCollection.DeleteAsync(deletedDocument.Key);
         }
@@ -40,7 +45,7 @@ public abstract class DataIngestor<TKey, TDocument, TChunk>(
         var modifiedDocuments = await source.GetNewOrModifiedDocumentsAsync(documentsForSource);
         foreach (var modifiedDocument in modifiedDocuments)
         {
-            Console.WriteLine("Processing {0}", modifiedDocument.DocumentId);
+            _logger.LogInformation("Processing {DocumentId}", modifiedDocument.DocumentId);
             await DeleteChunksForDocumentAsync(modifiedDocument);
 
             await documentsCollection.UpsertAsync(modifiedDocument);
@@ -49,7 +54,7 @@ public abstract class DataIngestor<TKey, TDocument, TChunk>(
             await chunksCollection.UpsertAsync(newRecords);
         }
 
-        Console.WriteLine("Ingestion is up-to-date");
+        _logger.LogInformation("Ingestion is up-to-date");
 
         async Task DeleteChunksForDocumentAsync(TDocument document)
         {

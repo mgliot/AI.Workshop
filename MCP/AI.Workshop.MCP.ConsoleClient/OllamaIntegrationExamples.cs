@@ -1,19 +1,23 @@
-﻿using Microsoft.Extensions.AI;
+﻿using AI.Workshop.Common;
+using Microsoft.Extensions.AI;
 using OllamaSharp;
 using System.Text;
 
 namespace AI.Workshop.MCP.ConsoleClient;
 
-internal class OllamaIntegrationExamples
+internal class OllamaIntegrationExamples : IDisposable
 {
+    private readonly OllamaApiClient _ollamaClient;
     private readonly IChatClient _chatClient;
+    private bool _disposed;
 
     public OllamaIntegrationExamples()
     {
-        var ollamaUri = new Uri("http://localhost:11434/");
-        var ollamaModel = "llama3.2";
+        var ollamaUri = new Uri(AIConstants.DefaultOllamaUri);
+        var ollamaModel = AIConstants.DefaultChatModel;
 
-        _chatClient = new OllamaApiClient(ollamaUri, ollamaModel);
+        _ollamaClient = new OllamaApiClient(ollamaUri, ollamaModel);
+        _chatClient = _ollamaClient;
     }
 
     internal async Task BasicRagWithMcpToolsAsync()
@@ -26,7 +30,7 @@ internal class OllamaIntegrationExamples
 
         List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
 
-        var workshopMcp = new WorkshopMcpService();
+        await using var workshopMcp = new WorkshopMcpService();
         var mcpTools = await workshopMcp.GetToolsAsync();
 
         var chatOptions = new ChatOptions
@@ -82,7 +86,7 @@ internal class OllamaIntegrationExamples
 
         List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
 
-        var gitHubMcp = new GitHubMcpService();
+        await using var gitHubMcp = new GitHubMcpService();
         var gitHubTools = await gitHubMcp.GetToolsAsync();
 
         var chatOptions = new ChatOptions
@@ -126,5 +130,12 @@ internal class OllamaIntegrationExamples
             history.Add(new(ChatRole.Assistant, messageBuilder.ToString()));
             Console.ResetColor();
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _ollamaClient.Dispose();
+        _disposed = true;
     }
 }

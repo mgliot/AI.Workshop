@@ -1,4 +1,6 @@
 using AI.Workshop.ChatApp.Web.Components;
+using AI.Workshop.ChatApp.Web.Services;
+using AI.Workshop.Guardrails;
 using AI.Workshop.VectorStore.Ingestion;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
@@ -9,6 +11,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+
+// Register chat settings and guardrails services
+builder.Services.AddScoped<ChatSettingsService>();
+builder.Services.AddScoped<GuardrailsService>(sp => new GuardrailsService(new GuardrailsOptions
+{
+    BlockedPatterns = [@"\b(password|secret|api[_-]?key)\b"],
+    MaxInputLength = 5000,
+    MaxOutputLength = 10000,
+    EnablePiiDetection = true
+}));
 
 builder.AddOllamaApiClient("chat")
     .AddChatClient()
@@ -30,6 +42,11 @@ if (vectorStoreSection == "Qdrant")
 
     builder.Services.AddScoped<QdrantBased.DataIngestor>();
     builder.Services.AddSingleton<QdrantBased.SemanticSearch>();
+    builder.Services.AddScoped<RagService>(sp => new RagService(
+        sp.GetRequiredService<QdrantBased.SemanticSearch>(),
+        sp.GetRequiredService<IWebHostEnvironment>(),
+        sp.GetRequiredService<ChatSettingsService>(),
+        sp.GetRequiredService<ILogger<RagService>>()));
 }
 else if (vectorStoreSection == "Sqlite")
 {
@@ -41,6 +58,11 @@ else if (vectorStoreSection == "Sqlite")
 
     builder.Services.AddScoped<DataIngestor>();
     builder.Services.AddSingleton<SemanticSearch>();
+    builder.Services.AddScoped<RagService>(sp => new RagService(
+        sp.GetRequiredService<SemanticSearch>(),
+        sp.GetRequiredService<IWebHostEnvironment>(),
+        sp.GetRequiredService<ChatSettingsService>(),
+        sp.GetRequiredService<ILogger<RagService>>()));
 }
 else
 {

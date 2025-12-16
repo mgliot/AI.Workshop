@@ -1,0 +1,146 @@
+using AI.Workshop.Common;
+using AI.Workshop.VectorStore;
+using Microsoft.Extensions.AI;
+using OllamaSharp;
+using System.Text;
+
+namespace AI.Workshop.ConsoleApps.VectorDemos;
+
+internal class BasicLocalOllamaExamples : IDisposable
+{
+    private readonly OllamaApiClient _chatClient;
+    private readonly OllamaApiClient _embeddingClient;
+    private readonly IChatClient _chatClientInterface;
+    private readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
+    private bool _disposed;
+
+    public BasicLocalOllamaExamples(string ollamaUri, string chatModel, string embeddingModel)
+    {
+        var uri = new Uri(ollamaUri);
+
+        _chatClient = new OllamaApiClient(uri, chatModel);
+        _chatClientInterface = _chatClient;
+
+        // OllamaApiClient implements IEmbeddingGenerator
+        _embeddingClient = new OllamaApiClient(uri, embeddingModel);
+        _embeddingGenerator = _embeddingClient;
+    }
+
+    internal async Task BasicPromptWithHistoryAsync()
+    {
+        var clientBuilder = new ChatClientBuilder(_chatClientInterface)
+            .Build();
+
+        var systemPrompt = PromptyHelper.GetSystemPrompt("BookRecommendation");
+        List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
+
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine(systemPrompt);
+        Console.ResetColor();
+
+        while (true)
+        {
+            // Get input
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("\nQ: ");
+            var input = Console.ReadLine()!;
+
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Exiting chat.");
+                Console.ResetColor();
+                break;
+            }
+
+            history.Add(new(ChatRole.User, input));
+
+            var streamingResponse = clientBuilder.GetStreamingResponseAsync(history);
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("A: ");
+            var messageBuilder = new StringBuilder();
+
+            await foreach (var chunk in streamingResponse)
+            {
+                Console.Write(chunk.Text);
+                messageBuilder.Append(chunk.Text);
+            }
+
+            history.Add(new(ChatRole.Assistant, messageBuilder.ToString()));
+            Console.ResetColor();
+        }
+    }
+
+    internal async Task BasicLocalStoreSearchAsync()
+    {
+        var inMemoryStore = new InMemoryStore(_embeddingGenerator);
+        await inMemoryStore.IngestDataAsync();
+
+        await foreach (var result in inMemoryStore.SearchAsync("Which service should I use to store my documents?"));
+    }
+
+    internal async Task BasicRagWithLocalStoreSearchAsync()
+    {
+        var clientBuilder = new ChatClientBuilder(_chatClientInterface)
+            .UseFunctionInvocation()
+            .Build();
+
+        var systemPrompt = PromptyHelper.GetSystemPrompt("ServiceSuggestion");
+
+        List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
+
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine(systemPrompt);
+        Console.ResetColor();
+
+        var inMemoryStore = new InMemoryStore(_embeddingGenerator);
+        await inMemoryStore.IngestDataAsync();
+
+        var chatOptions = new ChatOptions
+        {
+            Tools = [AIFunctionFactory.Create(inMemoryStore.SearchToolAsync)]
+        };
+
+        while (true)
+        {
+            // Get input
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("\nQ: ");
+            var input = Console.ReadLine()!;
+
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Exiting chat.");
+                Console.ResetColor();
+                break;
+            }
+
+            history.Add(new(ChatRole.User, input));
+
+            var streamingResponse = clientBuilder.GetStreamingResponseAsync(history, chatOptions);
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("A: ");
+            var messageBuilder = new StringBuilder();
+
+            await foreach (var chunk in streamingResponse)
+            {
+                Console.Write(chunk.Text);
+                messageBuilder.Append(chunk.Text);
+            }
+
+            history.Add(new(ChatRole.Assistant, messageBuilder.ToString()));
+            Console.ResetColor();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _chatClient.Dispose();
+        _embeddingClient.Dispose();
+        _disposed = true;
+    }
+}

@@ -14,9 +14,18 @@
     <PackageReference Include="OllamaSharp" Version="5.4.11" />
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.0.1" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.SqliteVec" Version="1.67.1-preview" />
+    <PackageReference Include="Prompty.Core" Version="0.2.3-beta" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Prompts\*.prompty">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\AI.Workshop.Common\AI.Workshop.Common.csproj" />
+    <ProjectReference Include="..\..\AI.Workshop.Guardrails\AI.Workshop.Guardrails.csproj" />
     <ProjectReference Include="..\..\AI.Workshop.VectorStore\AI.Workshop.VectorStore.csproj" />
     <ProjectReference Include="..\AI.Workshop.ChatApp.ServiceDefaults\AI.Workshop.ChatApp.ServiceDefaults.csproj" />
   </ItemGroup>

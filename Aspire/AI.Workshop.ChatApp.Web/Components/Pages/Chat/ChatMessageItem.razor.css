@@ -1,11 +1,11 @@
-﻿.user-message {
-    background: rgb(182 215 232);
+.user-message {
+    background: var(--primary-color, #4f46e5);
     align-self: flex-end;
     min-width: 25%;
     max-width: calc(100% - 5rem);
     padding: 0.5rem 1.25rem;
     border-radius: 0.25rem; 
-    color: #1F2937; 
+    color: #ffffff; 
     white-space: pre-wrap; 
 }
 
@@ -18,10 +18,12 @@
 
 .assistant-message-header {
     font-weight: 600;
+    color: var(--text-color, #e4e4e7);
 }
 
 .assistant-message-text {
     grid-column-start: 2;
+    color: var(--text-color, #e4e4e7);
 }
 
 .assistant-message-icon {
@@ -35,14 +37,15 @@
     background: #9b72ce;
 }
 
-    .assistant-message-icon svg {
-        width: 1rem; 
-        height: 1rem; 
-    }
+.assistant-message-icon svg {
+    width: 1rem; 
+    height: 1rem; 
+}
 
 .assistant-search {
     font-size: 0.875rem;
-    line-height: 1.25rem; 
+    line-height: 1.25rem;
+    color: var(--text-muted, #a1a1aa);
 }
 
 .assistant-search-icon {
@@ -53,10 +56,10 @@
     height: 1.5rem; 
 }
 
-    .assistant-search-icon svg {
-        width: 1rem; 
-        height: 1rem; 
-    }
+.assistant-search-icon svg {
+    width: 1rem; 
+    height: 1rem; 
+}
 
 .assistant-search-content {
     align-content: center;
@@ -64,6 +67,7 @@
 
 .assistant-search-phrase {
     font-weight: 600;
+    color: var(--text-color, #e4e4e7);
 }
 
 /* Default styling for markdown-formatted assistant messages */
@@ -100,7 +104,7 @@
 
 ::deep th {
     text-align: left;
-    border-bottom: 1px solid silver;
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
 }
 
 ::deep th, ::deep td {
@@ -108,13 +112,15 @@
 }
 
 ::deep th, ::deep tr:nth-child(even) {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 ::deep pre > code {
-    background-color: white;
+    background-color: var(--bg-tertiary, #16213e);
     display: block;
     padding: 0.5rem 1rem;
     margin: 1rem 0;
     overflow-x: auto;
+    color: var(--text-color, #e4e4e7);
+    border-radius: 6px;
 }

@@ -1,7 +1,7 @@
-﻿/* Used under CC0 license */
+/* Used under CC0 license */
 
 .lds-ellipsis {
-    color: #666;
+    color: var(--primary-color, #4f46e5);
     animation: fade-in 1s;
 }
 

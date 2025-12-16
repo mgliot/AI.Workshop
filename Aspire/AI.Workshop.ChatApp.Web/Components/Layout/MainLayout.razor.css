@@ -1,8 +1,9 @@
 #blazor-error-ui {
-    color-scheme: light only;
-    background: lightyellow;
+    color-scheme: dark only;
+    background: var(--bg-tertiary, #16213e);
+    color: var(--text-color, #e4e4e7);
     bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.5);
     box-sizing: border-box;
     display: none;
     left: 0;
@@ -12,9 +13,9 @@
     z-index: 1000;
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}

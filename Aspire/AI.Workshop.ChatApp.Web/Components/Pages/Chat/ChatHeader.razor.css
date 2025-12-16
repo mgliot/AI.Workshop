@@ -4,7 +4,90 @@
 }
 
 .chat-header-controls {
-    margin-bottom: 1.5rem; 
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.active-badges {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.header-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.header-badge.stats {
+    background: rgba(6, 182, 212, 0.2);
+}
+
+.header-badge.guardrails {
+    background: rgba(76, 175, 80, 0.2);
+}
+
+.header-badge.toon {
+    background: rgba(33, 150, 243, 0.2);
+}
+
+.btn-settings {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+    border-radius: 8px;
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.1));
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-settings:hover {
+    background: var(--bg-tertiary, rgba(255, 255, 255, 0.15));
+    border-color: var(--border-hover, rgba(255, 255, 255, 0.3));
+}
+
+.btn-theme {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+    border-radius: 8px;
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.1));
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-theme:hover {
+    background: var(--bg-tertiary, rgba(255, 255, 255, 0.15));
+    border-color: var(--border-hover, rgba(255, 255, 255, 0.3));
+    transform: scale(1.05);
+}
+
+.theme-icon {
+    font-size: 1.25rem;
+}
+
+.settings-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--text-color, #e4e4e7);
 }
 
 h1 {
@@ -15,7 +98,7 @@ h1 {
 .new-chat-icon {
     width: 1.25rem;
     height: 1.25rem;
-    color: rgb(55, 65, 81);
+    color: var(--text-color, #e4e4e7);
 }
 
 @media (min-width: 768px) {

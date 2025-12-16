@@ -1,32 +1,69 @@
 @import url('lib/tailwindcss/dist/preflight.css');
 
+/* Theme CSS variables */
+:root {
+    /* Dark theme (default) */
+    --bg-primary: #0f0f23;
+    --bg-secondary: #1a1a2e;
+    --bg-tertiary: #16213e;
+    --text-color: #e4e4e7;
+    --text-muted: #a1a1aa;
+    --primary-color: #4f46e5;
+    --primary-hover: #6366f1;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --border-hover: rgba(255, 255, 255, 0.2);
+    --gradient-start: #16213e;
+    --gradient-end: #0f0f23;
+}
+
+/* Light theme */
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --text-color: #1e293b;
+    --text-muted: #64748b;
+    --primary-color: #4f46e5;
+    --primary-hover: #6366f1;
+    --border-color: rgba(0, 0, 0, 0.1);
+    --border-hover: rgba(0, 0, 0, 0.2);
+    --gradient-start: #e2e8f0;
+    --gradient-end: #f8fafc;
+}
+
 html {
     min-height: 100vh;
+    background: var(--bg-primary);
+    color: var(--text-color);
 }
 
 html, .main-background-gradient {
-    background: linear-gradient(to bottom, rgb(225 227 233), #f4f4f4 25rem);
+    background: linear-gradient(to bottom, var(--gradient-start), var(--gradient-end) 25rem);
 }
 
 body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    background: var(--bg-primary);
+    color: var(--text-color);
 }
 
-    html::after {
-        content: '';
-        background-image: linear-gradient(to right, #3a4ed5, #3acfd5 15%, #d53abf 85%, red);
-        width: 100%;
-        height: 2px;
-        position: fixed;
-        top: 0;
-    }
+html::after {
+    content: '';
+    background-image: linear-gradient(to right, #3a4ed5, #3acfd5 15%, #d53abf 85%, #e53935);
+    width: 100%;
+    height: 2px;
+    position: fixed;
+    top: 0;
+    z-index: 9999;
+}
 
 h1 {
     font-size: 2.25rem;
     line-height: 2.5rem;
     font-weight: 600;
+    color: var(--text-color);
 }
 
 h1:focus {
@@ -51,9 +88,9 @@ h1:focus {
     color: white;
 }
 
-    .blazor-error-boundary::after {
-        content: "An error has occurred."
-    }
+.blazor-error-boundary::after {
+    content: "An error has occurred."
+}
 
 .btn-default {
     display: flex;
@@ -61,16 +98,18 @@ h1:focus {
     gap: 0.25rem;
     align-items: center;
     border-radius: 0.25rem;
-    border: 1px solid #9CA3AF;
+    border: 1px solid var(--border-color);
     font-size: 0.875rem;
     line-height: 1.25rem;
     font-weight: 600;
-    background-color: #D1D5DB;
+    background-color: var(--bg-secondary);
+    color: var(--text-color);
 }
 
-    .btn-default:hover {
-        background-color: #E5E7EB;
-    }
+.btn-default:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-hover);
+}
 
 .btn-subtle {
     display: flex;
@@ -78,15 +117,16 @@ h1:focus {
     gap: 0.25rem;
     align-items: center;
     border-radius: 0.25rem;
-    border: 1px solid #D1D5DB;
+    border: 1px solid var(--border-color);
     font-size: 0.875rem;
     line-height: 1.25rem;
+    color: var(--text-color);
 }
 
-    .btn-subtle:hover {
-        border-color: #93C5FD;
-        background-color: #DBEAFE;
-    }
+.btn-subtle:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(79, 70, 229, 0.1);
+}
 
 .page-width {
     max-width: 1024px;

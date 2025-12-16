@@ -1,4 +1,4 @@
-﻿.citation {
+.citation {
     display: inline-flex;
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
@@ -11,21 +11,22 @@
     border-radius: 0.25rem;
     font-size: 0.875rem;
     line-height: 1.25rem;
-    background-color: #ffffff;
+    background-color: var(--bg-secondary, #1a1a2e);
+    color: var(--text-color, #e4e4e7);
 }
 
-    .citation[href]:hover {
-        outline: 1px solid #865cb1;
-    }
+.citation[href]:hover {
+    outline: 1px solid #865cb1;
+}
 
-    .citation svg {
-        width: 1.5rem;
-        height: 1.5rem;
-    }
+.citation svg {
+    width: 1.5rem;
+    height: 1.5rem;
+}
 
-    .citation:active {
-        background-color: rgba(0,0,0,0.05);
-    }
+.citation:active {
+    background-color: var(--bg-tertiary, #16213e);
+}
 
 .citation-content {
     display: flex;
@@ -34,4 +35,5 @@
 
 .citation-file {
     font-weight: 600;
+    color: var(--text-color, #e4e4e7);
 }

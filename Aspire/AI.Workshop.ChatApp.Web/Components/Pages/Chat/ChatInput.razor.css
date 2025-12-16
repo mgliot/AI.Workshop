@@ -1,27 +1,33 @@
-﻿.input-box {
+.input-box {
     display: flex; 
     flex-direction: column; 
-    background: white;
-    border: 1px solid rgb(229, 231, 235);
+    background: var(--bg-secondary, #1a1a2e);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     padding: 0.5rem 0.75rem;
     margin-top: 0.75rem; 
 }
 
-    .input-box:focus-within {
-        outline: 2px solid #4152d5;
-    }
+.input-box:focus-within {
+    outline: 2px solid var(--primary-color, #4f46e5);
+}
 
 textarea {
     resize: none;
     border: none;
     outline: none;
     flex-grow: 1;
+    background: transparent;
+    color: var(--text-color, #e4e4e7);
 }
 
-    textarea:placeholder-shown + .tools {
-        --send-button-color: #aaa;
-    }
+textarea::placeholder {
+    color: var(--text-muted, #a1a1aa);
+}
+
+textarea:placeholder-shown + .tools {
+    --send-button-color: var(--text-muted, #a1a1aa);
+}
 
 .tools {
     display: flex; 
@@ -32,26 +38,27 @@ textarea {
 .tool-icon {
     width: 1.25rem;
     height: 1.25rem;
+    color: var(--text-color, #e4e4e7);
 }
 
 .send-button {
-    color: var(--send-button-color);
+    color: var(--send-button-color, var(--text-color, #e4e4e7));
     margin-left: auto;
 }
 
-    .send-button:hover {
-        color: black;
-    }
+.send-button:hover {
+    color: var(--primary-color, #4f46e5);
+}
 
 .attach {
-    background-color: white;
+    background-color: var(--bg-tertiary, #16213e);
     border-style: dashed;
-    color: #888;
-    border-color: #888;
+    color: var(--text-muted, #a1a1aa);
+    border-color: var(--text-muted, #a1a1aa);
     padding: 3px 8px;
 }
 
-    .attach:hover {
-        background-color: #f0f0f0;
-        color: black;
-    }
+.attach:hover {
+    background-color: var(--bg-secondary, #1a1a2e);
+    color: var(--text-color, #e4e4e7);
+}

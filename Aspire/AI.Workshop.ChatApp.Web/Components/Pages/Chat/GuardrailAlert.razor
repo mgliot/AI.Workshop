@@ -1,0 +1,44 @@
+@using AI.Workshop.Guardrails
+
+<div class="guardrail-alert @AlertType">
+    <div class="alert-icon">
+        @if (AlertType == "blocked")
+        {
+            <span>⛔</span>
+        }
+        else if (AlertType == "redacted")
+        {
+            <span>⚠️</span>
+        }
+        else
+        {
+            <span>ℹ️</span>
+        }
+    </div>
+    <div class="alert-content">
+        <div class="alert-title">@Title</div>
+        <div class="alert-message">@Message</div>
+        @if (!string.IsNullOrEmpty(ViolationType))
+        {
+            <div class="alert-violation">Violation: @ViolationType</div>
+        }
+    </div>
+    <button class="alert-close" @onclick="OnDismiss">✕</button>
+</div>
+
+@code {
+    [Parameter]
+    public string AlertType { get; set; } = "info"; // blocked, redacted, info
+
+    [Parameter]
+    public string Title { get; set; } = "";
+
+    [Parameter]
+    public string Message { get; set; } = "";
+
+    [Parameter]
+    public string? ViolationType { get; set; }
+
+    [Parameter]
+    public EventCallback OnDismiss { get; set; }
+}

@@ -2,6 +2,13 @@
 
 namespace AI.Workshop.VectorStore.Ingestion.Qdrant;
 
+/// <summary>
+/// Qdrant-specific GitHub markdown source using Guid keys.
+/// </summary>
+/// <remarks>
+/// This is a convenience class that binds the generic <see cref="GitHubMarkdownSource{TKey, TDocument, TChunk}"/>
+/// to Qdrant-specific types (Guid keys).
+/// </remarks>
 public class GitHubMarkdownSource(GitHubClient gitHubClient, string owner, string repo, string path) 
     : GitHubMarkdownSource<Guid, IngestedDocument, IngestedChunk>(gitHubClient, owner, repo, path)
 {

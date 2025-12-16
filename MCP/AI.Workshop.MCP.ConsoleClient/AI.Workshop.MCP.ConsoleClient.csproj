@@ -13,7 +13,10 @@
     <PackageReference Include="ModelContextProtocol" Version="0.4.1-preview.1" />
     <PackageReference Include="OllamaSharp" Version="5.4.11" />
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.0.1" />
-    <PackageReference Include="Prompty.Core" Version="0.2.3-beta" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\AI.Workshop.Common\AI.Workshop.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

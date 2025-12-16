@@ -7,17 +7,20 @@ namespace AI.Workshop.MCP.ConsoleClient;
 /// <summary>
 /// https://www.youtube.com/watch?v=9cwSOyavdSI&t=3223s
 /// </summary>
-internal class GitHubMcpService
+internal class GitHubMcpService : IAsyncDisposable
 {
     private readonly StdioClientTransport _transport;
-    private static IMcpClient? _mcpClient;
+    private static McpClient? _mcpClient;
     private readonly string[] _toolsToUse = 
         ["search_repositories", "get_file_contents", "list_issues", "search_code", "search_issues", "search_users"];
 
     public GitHubMcpService()
     {
         if (_mcpClient != null)
+        {
+            _transport = null!;
             return;
+        }
 
         var config = new ConfigurationBuilder()
             .AddUserSecrets<Program>()
@@ -38,7 +41,7 @@ internal class GitHubMcpService
         });
     }
 
-    public async Task<IMcpClient> GetClientAsync()
+    public async Task<McpClient> GetClientAsync()
     {
         var options = new McpClientOptions()
         {
@@ -46,7 +49,7 @@ internal class GitHubMcpService
             InitializationTimeout = TimeSpan.FromSeconds(30)
         };
 
-        _mcpClient ??= await McpClientFactory.CreateAsync(_transport, options);
+        _mcpClient ??= await McpClient.CreateAsync(_transport, options);
 
         return _mcpClient;
     }
@@ -56,5 +59,14 @@ internal class GitHubMcpService
         var client = await GetClientAsync();
         var allTools = await client.ListToolsAsync();
         return allTools.Where(tool => _toolsToUse.Contains(tool.Name));
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_mcpClient != null)
+        {
+            await _mcpClient.DisposeAsync();
+            _mcpClient = null;
+        }
     }
 }

@@ -1,50 +1,76 @@
-﻿@page "/"
+@page "/"
 
 @using System.ComponentModel
+@using System.Diagnostics
+@using AI.Workshop.Common
+@using AI.Workshop.Common.Toon
 
 @inject IChatClient ChatClient
 @inject NavigationManager Nav
-@inject IServiceProvider ServiceProvider
 @inject IConfiguration Configuration
+@inject ChatSettingsService Settings
+@inject GuardrailsService Guardrails
+@inject RagService RagService
 
 @implements IDisposable
 
-<PageTitle>Chat</PageTitle>
+<PageTitle>AI Workshop Chat</PageTitle>
 
-<ChatHeader OnNewChat="@ResetConversationAsync" />
+<ChatHeader OnNewChat="@ResetConversationAsync" OnSettingsClick="@ToggleSettings" Settings="@Settings" />
+
+<div class="agent-container page-width">
+    <AgentSelector Settings="@Settings" OnAgentChanged="@OnAgentChanged" />
+</div>
+
+@if (guardrailAlert != null)
+{
+    <div class="page-width">
+        <GuardrailAlert 
+            AlertType="@guardrailAlert.Type" 
+            Title="@guardrailAlert.Title" 
+            Message="@guardrailAlert.Message"
+            ViolationType="@guardrailAlert.ViolationType"
+            OnDismiss="@DismissAlert" />
+    </div>
+}
 
 <ChatMessageList Messages="@messages" InProgressMessage="@currentResponseMessage">
     <NoMessagesContent>
-        <div>To get started, try asking about these example documents. You can replace these with your own data and replace this message.</div>
+        <div>
+            <p>To get started, ask questions about your PDF documents.</p>
+            <p><strong>Current Agent:</strong> @AgentMetadata.Agents[Settings.SelectedAgent].Description</p>
+        </div>
         <ChatCitation File="Example_Emergency_Survival_Kit.pdf"/>
         <ChatCitation File="Example_GPS_Watch.pdf"/>
     </NoMessagesContent>
 </ChatMessageList>
 
 <div class="chat-container">
+    @if (Settings.CurrentStats != null)
+    {
+        <div class="page-width">
+            <StatsBar Stats="@Settings.CurrentStats" ToonEnabled="@Settings.ToonEnabled" />
+        </div>
+    }
     <ChatSuggestions OnSelected="@AddUserMessageAsync" @ref="@chatSuggestions" />
     <ChatInput OnSend="@AddUserMessageAsync" @ref="@chatInput" />
-    <SurveyPrompt /> @* Remove this line to eliminate the template survey message *@
 </div>
 
+<SettingsPanel IsOpen="@settingsOpen" OnClose="@CloseSettings" Settings="@Settings" />
+
 @code {
-    private const string SystemPrompt = @"
-        You are an assistant who answers questions about information you retrieve.
-        Do not answer questions about anything else.
-        Use only simple markdown to format your responses.
+    private string SystemPrompt = string.Empty;
+    private bool settingsOpen = false;
+    private AlertInfo? guardrailAlert;
 
-        Use the search tool to find relevant information. When you do this, end your
-        reply with citations in the special XML format:
+    private readonly ChatOptions chatOptions = new()
+    {
+        Temperature = 0.2f,
+        MaxOutputTokens = 2000,
+        ToolMode = ChatToolMode.Auto,
+        Tools = []
+    };
 
-        <citation filename='string' page_number='number'>exact quote here</citation>
-
-        Always include the citation in your response if there are results.
-
-        The quote must be max 5 words, taken word-for-word from the search result, and is the basis for why the citation is relevant.
-        Don't refer to the presence of citations; just emit these tags right at the end, with no surrounding text.
-        ";
-
-    private readonly ChatOptions chatOptions = new();
     private readonly List<ChatMessage> messages = new();
     private CancellationTokenSource? currentResponseCancellation;
     private ChatMessage? currentResponseMessage;
@@ -53,26 +79,156 @@
 
     protected override void OnInitialized()
     {
-        messages.Add(new(ChatRole.System, SystemPrompt));
-        chatOptions.Tools = [AIFunctionFactory.Create(SearchAsync)];
+        LoadAgentPrompt();
+        ConfigureTools();
+        Settings.OnSettingsChanged += StateHasChanged;
     }
+
+    private void LoadAgentPrompt()
+    {
+        var agentName = Settings.SelectedAgent.ToString();
+        SystemPrompt = PromptyHelper.GetSystemPrompt(agentName);
+        
+        messages.Clear();
+        messages.Add(new(ChatRole.System, SystemPrompt));
+    }
+
+    private void ConfigureTools()
+    {
+        chatOptions.Tools!.Clear();
+
+        // Add search tool
+        chatOptions.Tools.Add(AIFunctionFactory.Create(
+            RagService.SearchAsync,
+            "SearchDocuments",
+            "Searches for information in PDF documents using a phrase or keyword"));
+
+        // Add list documents tool for PDF summarization
+        if (Settings.SelectedAgent == AgentType.PDFSummarization)
+        {
+            chatOptions.Tools.Add(AIFunctionFactory.Create(
+                RagService.ListDocumentsAsync,
+                "ListDocuments",
+                "Lists all available PDF documents that can be searched or summarized"));
+        }
+    }
+
+    private async Task OnAgentChanged(AgentType agent)
+    {
+        LoadAgentPrompt();
+        ConfigureTools();
+        await ResetConversationAsync();
+    }
+
+    private void ToggleSettings() => settingsOpen = !settingsOpen;
+    private void CloseSettings() => settingsOpen = false;
+    private void DismissAlert() => guardrailAlert = null;
 
     private async Task AddUserMessageAsync(ChatMessage userMessage)
     {
         CancelAnyCurrentResponse();
+        guardrailAlert = null;
+        Settings.ClearCurrentStats();
+        RagService.ClearLastComparison();
+
+        var userInput = userMessage.Text ?? string.Empty;
+
+        // Validate input with guardrails if enabled
+        if (Settings.GuardrailsEnabled)
+        {
+            var inputResult = Guardrails.ValidateInput(userInput);
+            if (!inputResult.IsAllowed)
+            {
+                guardrailAlert = new AlertInfo(
+                    "blocked",
+                    "Message Blocked",
+                    inputResult.ViolationMessage ?? "Your message was blocked by content safety.",
+                    inputResult.ViolationType?.ToString());
+                StateHasChanged();
+                return;
+            }
+            if (inputResult.RedactedContent != null)
+            {
+                guardrailAlert = new AlertInfo(
+                    "redacted",
+                    "Content Redacted",
+                    "Some content in your message was redacted.",
+                    inputResult.ViolationType?.ToString());
+                userMessage = new ChatMessage(ChatRole.User, inputResult.RedactedContent);
+            }
+        }
 
         // Add the user message to the conversation
         messages.Add(userMessage);
         chatSuggestions?.Clear();
         await chatInput!.FocusAsync();
 
-        // Display a new response from the IChatClient, streaming responses
-        // aren't supported because Ollama will not support both streaming and using Tools
-        currentResponseCancellation = new();
-        var response = await ChatClient.GetResponseAsync(messages, chatOptions, currentResponseCancellation.Token);
+        // Start timing
+        var stopwatch = Stopwatch.StartNew();
 
-        // Store responses in the conversation, and begin getting suggestions
-        messages.AddMessages(response);
+        // Stream and display a new response from the IChatClient
+        var responseText = new TextContent("");
+        currentResponseMessage = new ChatMessage(ChatRole.Assistant, [responseText]);
+        currentResponseCancellation = new();
+        UsageDetails? lastUsage = null;
+        
+        await foreach (var update in ChatClient.GetStreamingResponseAsync([.. messages], chatOptions, currentResponseCancellation.Token))
+        {
+            messages.AddMessages(update, filter: c => c is not TextContent);
+            responseText.Text += update.Text;
+            
+            // Capture usage from the stream
+            foreach (var usageContent in update.Contents.OfType<UsageContent>())
+            {
+                lastUsage ??= new UsageDetails();
+                lastUsage.Add(usageContent.Details);
+            }
+            
+            // Trigger UI update for streaming text
+            await ChatMessageItem.NotifyChangedAsync(currentResponseMessage!);
+            StateHasChanged();
+        }
+
+        stopwatch.Stop();
+
+        // Track token usage
+        if (lastUsage != null)
+        {
+            Settings.TokenTracker.RecordUsage(lastUsage);
+        }
+
+        // Update stats with timing and TOON comparison
+        Settings.UpdateStats(new ResponseStats(
+            ResponseTime: stopwatch.Elapsed,
+            InputTokens: lastUsage?.InputTokenCount,
+            OutputTokens: lastUsage?.OutputTokenCount,
+            TotalTokens: lastUsage?.TotalTokenCount,
+            ToonComparison: RagService.LastToonComparison));
+
+        var responseContent = responseText.Text ?? string.Empty;
+
+        // Validate output with guardrails if enabled
+        if (Settings.GuardrailsEnabled)
+        {
+            var outputResult = Guardrails.ValidateOutput(responseContent);
+            if (!outputResult.IsAllowed)
+            {
+                responseText.Text = "[Response blocked by guardrails]";
+                guardrailAlert = new AlertInfo(
+                    "blocked",
+                    "Response Blocked",
+                    outputResult.ViolationMessage ?? "The AI response was blocked by content safety.",
+                    outputResult.ViolationType?.ToString());
+            }
+            else if (outputResult.RedactedContent != null)
+            {
+                responseText.Text = outputResult.RedactedContent;
+            }
+        }
+
+        // Store the final response in the conversation, and begin getting suggestions
+        messages.Add(currentResponseMessage!);
+        currentResponseMessage = null;
         chatSuggestions?.Update(messages);
     }
 
@@ -91,46 +247,18 @@
     private async Task ResetConversationAsync()
     {
         CancelAnyCurrentResponse();
+        guardrailAlert = null;
         messages.Clear();
         messages.Add(new(ChatRole.System, SystemPrompt));
         chatSuggestions?.Clear();
         await chatInput!.FocusAsync();
     }
 
-    [Description("Searches for information using a phrase or keyword")]
-    private async Task<IEnumerable<string>> SearchAsync(
-        [Description("The phrase to search for.")] string searchPhrase,
-        [Description("If possible, specify the filename to search that file only. If not provided or empty, the search includes all files.")] string? filenameFilter = null)
+    public void Dispose()
     {
-        await InvokeAsync(StateHasChanged);
-
-        var vectorStoreSection = Configuration["VECTOR_STORE"];
-
-        if (vectorStoreSection == "Qdrant")
-        {
-            var service = ServiceProvider.GetRequiredService<VectorStore.Ingestion.Qdrant.SemanticSearch>();
-
-            var results = await service.SearchAsync(searchPhrase, filenameFilter, maxResults: 5);
-
-            return results.Select(result =>
-                $"<result filename=\"{result.DocumentId}\" page_number=\"{result.PageNumber}\">{result.Text}</result>");
-
-        }
-        else if (vectorStoreSection == "Sqlite")
-        {
-            var service = ServiceProvider.GetRequiredService<VectorStore.Ingestion.SemanticSearch>();
-
-            var results = await service.SearchAsync(searchPhrase, filenameFilter, maxResults: 5);
-
-            return results.Select(result =>
-                $"<result filename=\"{result.DocumentId}\" page_number=\"{result.PageNumber}\">{result.Text}</result>");
-        }
-        else
-        {
-            throw new InvalidOperationException("Unsupported vector store configured.");
-        }
+        Settings.OnSettingsChanged -= StateHasChanged;
+        currentResponseCancellation?.Cancel();
     }
 
-    public void Dispose()
-        => currentResponseCancellation?.Cancel();
+    private record AlertInfo(string Type, string Title, string Message, string? ViolationType);
 }

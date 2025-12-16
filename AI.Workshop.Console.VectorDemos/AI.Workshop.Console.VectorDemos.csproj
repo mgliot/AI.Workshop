@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>AI.Workshop.ConsoleApps.VectorDemos</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.Qdrant" Version="1.67.1-preview" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.SqliteVec" Version="1.67.1-preview" />
+    <PackageReference Include="OllamaSharp" Version="5.4.11" />
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.0.1" />
+    <PackageReference Include="Qdrant.Client" Version="1.15.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AI.Workshop.Common\AI.Workshop.Common.csproj" />
+    <ProjectReference Include="..\AI.Workshop.VectorStore\AI.Workshop.VectorStore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Prompts\*.prompty">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0-preview.4.25258.110" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0-preview.4.25258.110" />
+  </ItemGroup>
+
+</Project>

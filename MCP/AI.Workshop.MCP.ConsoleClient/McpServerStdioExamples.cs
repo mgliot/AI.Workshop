@@ -1,6 +1,5 @@
 ﻿using ModelContextProtocol;
 using ModelContextProtocol.Client;
-using ModelContextProtocol.Protocol;
 
 namespace AI.Workshop.MCP.ConsoleClient;
 
@@ -13,7 +12,7 @@ internal class McpServerStdioExamples
 {
     internal async Task EnlistServerInfoAsync()
     {
-        var sampleClient = new WorkshopMcpService();
+        await using var sampleClient = new WorkshopMcpService();
         var client = await sampleClient.GetClientAsync();
 
         await client.PingAsync();
@@ -23,7 +22,6 @@ internal class McpServerStdioExamples
         Console.WriteLine($"Capability: {nameof(client.ServerCapabilities.Tools)} - {client.ServerCapabilities.Tools}");
         Console.WriteLine($"Capability: {nameof(client.ServerCapabilities.Completions)} - {client.ServerCapabilities.Completions}");
         Console.WriteLine($"Capability: {nameof(client.ServerCapabilities.Logging)} - {client.ServerCapabilities.Logging}");
-        Console.WriteLine($"Capability: {nameof(client.ServerCapabilities.NotificationHandlers)} - {client.ServerCapabilities.NotificationHandlers}");
         Console.WriteLine($"Capability: {nameof(client.ServerCapabilities.Experimental)} - {client.ServerCapabilities.Experimental}");
 
         if (client.ServerCapabilities.Prompts != null)
@@ -56,7 +54,7 @@ internal class McpServerStdioExamples
 
     internal async Task CallMcpServerToolsAsync()
     {
-        var sampleClient = new WorkshopMcpService();
+        await using var sampleClient = new WorkshopMcpService();
         var client = await sampleClient.GetClientAsync();
 
         var result = await client.CallToolAsync("echo", new Dictionary<string, object?>() { ["message"] = "Hello MCP!" });
@@ -70,7 +68,7 @@ internal class McpServerStdioExamples
 
     internal async Task CallMonkeyToolsAsync()
     {
-        var sampleClient = new WorkshopMcpService();
+        await using var sampleClient = new WorkshopMcpService();
         var client = await sampleClient.GetClientAsync();
 
         var result = await client.CallToolAsync("get_monkeys", new Dictionary<string, object?>());
@@ -78,16 +76,5 @@ internal class McpServerStdioExamples
 
         result = await client.CallToolAsync("get_monkey", new Dictionary<string, object?>() { ["name"] = "Baboon" });
         Console.WriteLine($"Result: {result.Content.First().ToAIContent()}");
-    }
-
-    internal async Task SendRequestToResourceAsync()
-    {
-        var sampleClient = new WorkshopMcpService();
-        var client = await sampleClient.GetClientAsync();
-
-        await client.SendRequestAsync(new JsonRpcRequest() 
-        { 
-            Method = "" 
-        });
     }
 }

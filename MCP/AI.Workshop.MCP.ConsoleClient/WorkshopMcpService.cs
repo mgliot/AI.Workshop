@@ -3,21 +3,18 @@ using ModelContextProtocol.Client;
 
 namespace AI.Workshop.MCP.ConsoleClient;
 
-internal class WorkshopMcpService
+internal class WorkshopMcpService : IAsyncDisposable
 {
     private readonly StdioClientTransport _transport;
-    private static IMcpClient? _mcpClient;
+    private static McpClient? _mcpClient;
 
     public WorkshopMcpService()
     {
         if (_mcpClient != null)
+        {
+            _transport = null!;
             return;
-
-        //var transport = new StdioClientTransport(new StdioClientTransportOptions()
-        //{
-        //    Name = "MCP Console Client",
-        //    Command = @"C:\Projects\AI\AI.Workshop\MCP\AI.Workshop.MCP.ConsoleServer\bin\Debug\net9.0\AI.Workshop.MCP.ConsoleServer.exe"
-        //});
+        }
 
         var serverDir = Path.GetFullPath(AppContext.BaseDirectory.Replace("ConsoleClient", "ConsoleServer"));
         var serverDll = Path.Combine(serverDir, "AI.Workshop.MCP.ConsoleServer.dll");
@@ -25,7 +22,7 @@ internal class WorkshopMcpService
         _transport = new StdioClientTransport(new StdioClientTransportOptions
         {
             Name = "MCP Console Client",
-            Command = "dotnet", // Launch via dotnet CLI
+            Command = "dotnet",
             Arguments = [serverDll],
             WorkingDirectory = serverDir,
             EnvironmentVariables = new Dictionary<string, string?>
@@ -36,9 +33,9 @@ internal class WorkshopMcpService
         });
     }
 
-    public async Task<IMcpClient> GetClientAsync()
+    public async Task<McpClient> GetClientAsync()
     {
-        _mcpClient ??= await McpClientFactory.CreateAsync(_transport);
+        _mcpClient ??= await McpClient.CreateAsync(_transport);
 
         return _mcpClient;
     }
@@ -47,5 +44,14 @@ internal class WorkshopMcpService
     {
         var client = await GetClientAsync();
         return await client.ListToolsAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_mcpClient != null)
+        {
+            await _mcpClient.DisposeAsync();
+            _mcpClient = null;
+        }
     }
 }

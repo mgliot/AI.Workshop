@@ -1,0 +1,79 @@
+@using AI.Workshop.ChatApp.Web.Services
+
+<div class="settings-panel @(IsOpen ? "open" : "")">
+    <div class="settings-header">
+        <h3>Settings</h3>
+        <button class="close-btn" @onclick="Close">×</button>
+    </div>
+    
+    <div class="settings-content">
+        <div class="setting-item">
+            <label>
+                <input type="checkbox" checked="@Settings.ToonEnabled" @onchange="ToggleToon" />
+                <span class="setting-label">TOON Format</span>
+            </label>
+            <span class="setting-desc">Token-efficient formatting (30-60% savings)</span>
+        </div>
+        
+        <div class="setting-item">
+            <label>
+                <input type="checkbox" checked="@Settings.GuardrailsEnabled" @onchange="ToggleGuardrails" />
+                <span class="setting-label">Guardrails</span>
+            </label>
+            <span class="setting-desc">Content safety validation</span>
+        </div>
+        
+        <div class="setting-info">
+            <span class="info-icon">📊</span>
+            <span class="info-text">Token stats are always displayed after each response</span>
+        </div>
+    </div>
+    
+    <div class="settings-footer">
+        @if (Settings.TokenTracker.RequestCount > 0)
+        {
+            <div class="token-summary">
+                <span class="token-label">Session:</span>
+                <span class="token-value">@Settings.TokenTracker.TotalInputTokens.ToString("N0") in</span>
+                <span class="token-separator">/</span>
+                <span class="token-value">@Settings.TokenTracker.TotalOutputTokens.ToString("N0") out</span>
+                <span class="token-separator">=</span>
+                <span class="token-value">@Settings.TokenTracker.TotalTokens.ToString("N0") total</span>
+                <button class="reset-btn" @onclick="ResetTracker" title="Reset counters">↻</button>
+            </div>
+        }
+        <div class="active-badges">
+            <span class="badge stats">📊 Stats</span>
+            @if (Settings.ToonEnabled)
+            {
+                <span class="badge toon">📝 TOON</span>
+            }
+            @if (Settings.GuardrailsEnabled)
+            {
+                <span class="badge guardrails">🛡️ Guardrails</span>
+            }
+        </div>
+    </div>
+</div>
+
+@if (IsOpen)
+{
+    <div class="settings-backdrop" @onclick="Close"></div>
+}
+
+@code {
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public required ChatSettingsService Settings { get; set; }
+
+    private async Task Close() => await OnClose.InvokeAsync();
+
+    private void ToggleToon() => Settings.ToggleToon();
+    private void ToggleGuardrails() => Settings.ToggleGuardrails();
+    private void ResetTracker() => Settings.ResetTokenTracker();
+}

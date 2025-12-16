@@ -1,0 +1,37 @@
+@using AI.Workshop.ChatApp.Web.Services
+
+<div class="agent-selector">
+    <label class="agent-selector-label">Select Agent:</label>
+    <div class="agent-buttons">
+        @foreach (var agent in AgentMetadata.Agents)
+        {
+            <button class="agent-btn @(Settings.SelectedAgent == agent.Key ? "active" : "")"
+                    @onclick="() => SelectAgent(agent.Key)"
+                    title="@agent.Value.Description">
+                <span class="agent-icon">@GetIcon(agent.Value.Icon)</span>
+                <span class="agent-name">@agent.Value.Name</span>
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public required ChatSettingsService Settings { get; set; }
+
+    [Parameter]
+    public EventCallback<AgentType> OnAgentChanged { get; set; }
+
+    private async Task SelectAgent(AgentType agent)
+    {
+        Settings.SetAgent(agent);
+        await OnAgentChanged.InvokeAsync(agent);
+    }
+
+    private string GetIcon(string icon) => icon switch
+    {
+        "search" => "🔍",
+        "document" => "📄",
+        _ => "🤖"
+    };
+}

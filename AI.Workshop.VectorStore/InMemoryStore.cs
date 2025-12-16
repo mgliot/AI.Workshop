@@ -1,13 +1,17 @@
 ﻿using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.VectorData;
 using Microsoft.SemanticKernel.Connectors.InMemory;
 using System.ComponentModel;
 
 namespace AI.Workshop.VectorStore;
 
-public class InMemoryStore(IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator)
+public class InMemoryStore(
+    IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
+    ILogger<InMemoryStore>? logger = null)
 {
-    private static InMemoryCollection<int, VectorModel> _inMemoryVectorStore;
+    private InMemoryCollection<int, VectorModel>? _inMemoryVectorStore;
 
     public async Task IngestDataAsync()
     {
@@ -24,21 +28,23 @@ public class InMemoryStore(IEmbeddingGenerator<string, Embedding<float>> embeddi
 
     public async IAsyncEnumerable<VectorSearchResult<VectorModel>> SearchAsync(string text, int numberOfResults = 1)
     {
+        if (_inMemoryVectorStore is null)
+        {
+            throw new InvalidOperationException("Vector store not initialized. Call IngestDataAsync first.");
+        }
+
         var queryEmbedding = await embeddingGenerator.GenerateVectorAsync(text);
 
         var results = _inMemoryVectorStore.SearchAsync(queryEmbedding, top: numberOfResults);
 
-        Console.ForegroundColor = ConsoleColor.Green;
+        var log = logger ?? NullLogger<InMemoryStore>.Instance;
 
         await foreach (var result in results)
         {
-            Console.WriteLine($"Name: {result.Record.Name}");
-            Console.WriteLine($"Description: {result.Record.Description}");
-            Console.WriteLine($"Vector match score: {result.Score}");
+            log.LogInformation("Name: {Name}, Description: {Description}, Score: {Score}",
+                result.Record.Name, result.Record.Description, result.Score);
             yield return result;
         }
-
-        Console.ResetColor();
     }
 
     [Description("Searches for information about services using a phrase or keyword")]

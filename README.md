@@ -9,6 +9,7 @@ It includes:
 - **Console-based AI demos** with Ollama LLMs
 - **Retrieval-Augmented Generation (RAG)** workflows
 - **Vector store integrations** (SQLite-Vec, Qdrant, In-Memory)
+- **AI Guardrails** – Input/output validation, prompt injection detection, PII filtering
 - **Microsoft Agent Framework** examples
 - **Model Context Protocol (MCP)** server and client implementations
 - **Aspire-orchestrated** distributed chat applications
@@ -16,45 +17,50 @@ It includes:
 
 Whether you're exploring **prompt engineering**, **semantic search**, **AI agents**, or **MCP integrations**, this workshop provides ready-to-run examples and reusable components.
 
+> 📐 **Architecture Documentation**: See the [`docs/`](./docs/) folder for detailed architecture diagrams and technical documentation for each project.
+
 ---
 
 ## 🏗️ Solution Structure
 
 ### Console Applications
 
-| Project | Purpose |
-|---------|---------|
-| **AI.Workshop.ConsoleChat.Ollama** | Local Ollama chat demos with vector stores (SQLite-Vec, Qdrant) |
-| **AI.Workshop.ConsoleChat.RAG** | RAG workflows, tool calling, and document search |
+| Project | Purpose | Docs |
+|---------|---------|------|
+| **AI.Workshop.Console.VectorDemos** | Vector store demos with SQLite-Vec and Qdrant | [📐](./docs/AI.Workshop.Console.VectorDemos.md) |
+| **AI.Workshop.Console.AgentChat** | Interactive agent navigator with RAG workflows | [📐](./docs/AI.Workshop.Console.AgentChat.md) |
+| **AI.Workshop.Console.Agents** | Microsoft Agent Framework demos (workflows, tools, multi-agent) | [📐](./docs/AI.Workshop.Console.Agents.md) |
+
+### Web Applications
+
+| Project | Purpose | Docs |
+|---------|---------|------|
+| **AI.Workshop.WebApi.Agents** | Web API with sequential agent workflows (Writer → Editor) | [📐](./docs/AI.Workshop.WebApi.Agents.md) |
 
 ### Common Libraries
 
-| Project | Purpose |
-|---------|---------|
-| **AI.Workshop.VectorStore** | In-memory vector store, PDF/GitHub ingestion pipelines, semantic search |
-
-### Agents
-
-| Project | Purpose |
-|---------|---------|
-| **AI.Workshop.ConsoleAgent** | Microsoft Agent Framework demos (workflows, tools, multi-agent) |
-| **AI.Workshop.WebApiAgent** | Web API with sequential agent workflows (Writer → Editor) |
+| Project | Purpose | Docs |
+|---------|---------|------|
+| **AI.Workshop.Common** | Shared constants, Prompty helper, DI extensions, TOON, caching, health checks | [📐](./docs/AI.Workshop.Common.md) |
+| **AI.Workshop.Guardrails** | AI guardrails middleware – input/output validation, prompt injection, PII, toxicity, rate limiting, topic restriction, LLM moderation, telemetry | [📐](./docs/AI.Workshop.Guardrails.md) |
+| **AI.Workshop.VectorStore** | In-memory vector store, PDF/GitHub ingestion pipelines, semantic search | [📐](./docs/AI.Workshop.VectorStore.md) |
+| **AI.Workshop.Tests** | 198 unit tests for Common, Guardrails, and VectorStore (xUnit, FluentAssertions) | - |
 
 ### Model Context Protocol (MCP)
 
-| Project | Purpose |
-|---------|---------|
-| **AI.Workshop.MCP.ConsoleServer** | MCP server with stdio transport, tools (Monkey API), resources |
-| **AI.Workshop.MCP.ConsoleClient** | MCP client consuming tools from local and GitHub servers |
-| **AI.Workshop.MCP.HttpServer** | Minimal MCP HTTP server with ASP.NET Core |
+| Project | Purpose | Docs |
+|---------|---------|------|
+| **AI.Workshop.MCP.ConsoleServer** | MCP server with stdio transport, tools (Monkey API), resources | [📐](./docs/AI.Workshop.MCP.md) |
+| **AI.Workshop.MCP.ConsoleClient** | MCP client consuming tools from local and GitHub servers | [📐](./docs/AI.Workshop.MCP.md) |
+| **AI.Workshop.MCP.HttpServer** | Minimal MCP HTTP server with ASP.NET Core | [📐](./docs/AI.Workshop.MCP.md) |
 
 ### Aspire (Distributed App)
 
-| Project | Purpose |
-|---------|---------|
-| **AI.Workshop.ChatApp.AppHost** | Aspire orchestrator (Ollama, Qdrant containers) |
-| **AI.Workshop.ChatApp.Web** | Blazor Server chat with PDF ingestion and vector search |
-| **AI.Workshop.ChatApp.ServiceDefaults** | Shared Aspire configuration and OpenTelemetry |
+| Project | Purpose | Docs |
+|---------|---------|------|
+| **AI.Workshop.ChatApp.AppHost** | Aspire orchestrator (Ollama, Qdrant containers) | [📐](./docs/AI.Workshop.ChatApp.md) |
+| **AI.Workshop.ChatApp.Web** | Full-featured Blazor chat: agent selection, RAG, TOON, guardrails, token tracking, stats bar, theme toggle | [📐](./docs/AI.Workshop.ChatApp.md) |
+| **AI.Workshop.ChatApp.ServiceDefaults** | Shared Aspire configuration and OpenTelemetry | [📐](./docs/AI.Workshop.ChatApp.md) |
 
 ---
 
@@ -63,12 +69,27 @@ Whether you're exploring **prompt engineering**, **semantic search**, **AI agent
 - **Ollama Integration** – Local LLM inference with llama3.2 and all-minilm embeddings
 - **Vector Stores** – SQLite-Vec, Qdrant, and In-Memory implementations
 - **RAG Pipelines** – PDF ingestion, chunking, embedding, and semantic search
+- **AI Guardrails** – Middleware for input/output validation:
+  - Prompt injection detection (24+ attack patterns)
+  - PII detection (SSN, credit cards, emails, phones, IP addresses)
+  - Toxicity filtering (violence, self-harm, illegal activity)
+  - Rate limiting with sliding window algorithm
+  - Topic restriction with semantic similarity matching
+  - LLM-based content moderation
+  - Custom keyword/pattern blocking
+  - Configurable actions (Block, LogOnly, Redact)
+  - Built-in telemetry and metrics collection
 - **Tool Calling** – Function invocation with AI models
 - **Microsoft Agents** – Multi-agent workflows with ChatClientAgent
 - **MCP Support** – Model Context Protocol servers and clients for tool extensibility
 - **Prompty Templates** – Centralized prompt management with `.prompty` files
 - **Aspire Orchestration** – Container management for Ollama and Qdrant
 - **OpenTelemetry** – Built-in observability and tracing
+- **Embedding Caching** – In-memory and distributed caching for embeddings
+- **TOON Support** – Token-Oriented Object Notation for 30-60% token savings
+- **Interactive Feature Toggles** – Runtime enable/disable for Guardrails and TOON in console and web
+- **Token Usage Tracking** – Per-response and session totals for LLM token consumption (always displayed)
+- **Ollama Health Check** – Connection validation with retry logic before starting apps
 
 ---
 
@@ -83,6 +104,7 @@ Whether you're exploring **prompt engineering**, **semantic search**, **AI agent
 - **Semantic Kernel 1.67.1** for vector store connectors
 - **Prompty.Core 0.2.3** for prompt template management
 - **OllamaSharp 5.4.11** for Ollama API bindings
+- **ToonSharp 1.0.0** for TOON serialization
 - **Qdrant** for vector database
 - **SQLite-Vec** for embedded vector storage
 - **PdfPig** for PDF text extraction
@@ -174,21 +196,21 @@ dotnet build AI.Workshop.sln
 
 #### 5️⃣ Run Examples
 
-**Console Chat with Ollama:**
+**Vector Store Demos:**
 ```bash
-cd AI.Workshop.ConsoleChat.Ollama
+cd AI.Workshop.Console.VectorDemos
 dotnet run
 ```
 
-**RAG Workflow Examples:**
+**Interactive Agent Chat (RAG):**
 ```bash
-cd AI.Workshop.ConsoleChat.RAG
+cd AI.Workshop.Console.AgentChat
 dotnet run
 ```
 
-**Agent Examples:**
+**Agent Framework Examples:**
 ```bash
-cd Agents/AI.Workshop.ConsoleAgent
+cd AI.Workshop.Console.Agents
 dotnet run
 ```
 
@@ -204,6 +226,152 @@ cd Aspire/AI.Workshop.ChatApp.AppHost
 dotnet run
 ```
 
+**Run Unit Tests:**
+```bash
+dotnet test AI.Workshop.Tests
+```
+
+---
+
+## 🛡️ AI Guardrails
+
+The `AI.Workshop.Guardrails` library provides middleware for validating AI inputs and outputs using the `Microsoft.Extensions.AI` pipeline pattern.
+
+### Validators
+
+| Validator | Description | Priority |
+|-----------|-------------|----------|
+| **Rate Limiting** | Sliding window rate limiting per client | 5 |
+| **Input Length** | Enforces maximum input character limits | 10 |
+| **Prompt Injection** | Detects 24+ injection attack patterns | 20 |
+| **PII Detection** | Blocks SSN, credit cards, emails, phones, IP addresses, passports | 30 |
+| **Topic Restriction** | Keyword or semantic similarity matching | 35 |
+| **Toxicity Filtering** | Blocks violence, self-harm, illegal activity, harassment | 40 |
+| **Custom Keywords** | Block custom keywords or regex patterns | 50 |
+| **LLM Moderation** | LLM-based content moderation for nuanced detection | 100 |
+
+### Basic Usage
+
+```csharp
+using AI.Workshop.Guardrails;
+using Microsoft.Extensions.AI;
+
+// Option 1: ChatClientBuilder pipeline
+IChatClient client = new ChatClientBuilder(ollamaClient)
+    .UseGuardrails(options =>
+    {
+        options.EnablePromptInjectionDetection = true;
+        options.EnablePiiDetection = true;
+        options.EnableToxicityFiltering = true;
+        options.BlockedKeywords = ["confidential", "secret"];
+        options.DefaultAction = GuardrailAction.Block;
+    }, onViolation: result =>
+    {
+        Console.WriteLine($"Blocked: {result.ViolationType} - {result.ViolationMessage}");
+    })
+    .UseFunctionInvocation()
+    .Build();
+
+// Option 2: Wrap existing client
+IChatClient guardedClient = existingClient.WithGuardrails(options =>
+{
+    options.MaxInputLength = 5000;
+    options.EnablePromptInjectionDetection = true;
+});
+
+// Option 3: Dependency Injection
+builder.Services.AddGuardrails(options =>
+{
+    options.EnablePiiDetection = true;
+});
+
+builder.Services.AddChatClient(services => ollamaClient.AsIChatClient())
+    .UseGuardrails();
+```
+
+### Advanced Features
+
+```csharp
+// Rate limiting per client
+builder.Services.AddAdvancedGuardrails(options =>
+{
+    options.EnableRateLimiting = true;
+    options.RateLimitMaxRequests = 60;
+    options.RateLimitWindowSeconds = 60;
+    options.RateLimitClientId = "user-123";  // Per-user tracking
+});
+
+// Topic restriction with semantic similarity
+builder.Services.AddAdvancedGuardrails(options =>
+{
+    options.EnableTopicRestriction = true;
+    options.AllowedTopics = ["programming", "software development", "technology"];
+    options.TopicSimilarityThreshold = 0.5;  // 0.0 to 1.0
+});
+
+// LLM-based moderation (requires IChatClient in DI)
+builder.Services.AddAdvancedGuardrails(options =>
+{
+    options.EnableLlmModeration = true;
+    options.LlmModerationFailureAction = GuardrailAction.LogOnly;
+});
+
+// Access metrics
+var metrics = app.Services.GetRequiredService<GuardrailsMetrics>();
+var summary = metrics.GetSummary();
+Console.WriteLine($"Block rate: {summary.BlockRate:F1}%");
+Console.WriteLine($"Total validations: {summary.TotalValidations}");
+```
+
+### Configuration Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `MaxInputLength` | 10000 | Maximum input characters |
+| `MaxOutputLength` | 50000 | Maximum output characters |
+| `EnablePromptInjectionDetection` | true | Detect injection attacks |
+| `EnablePiiDetection` | true | Detect personal information |
+| `EnableToxicityFiltering` | true | Block harmful content |
+| `EnableTopicRestriction` | false | Restrict to allowed topics |
+| `AllowedTopics` | [] | Topics for restriction |
+| `TopicSimilarityThreshold` | 0.5 | Semantic similarity threshold |
+| `EnableRateLimiting` | false | Enable rate limiting |
+| `RateLimitMaxRequests` | 60 | Max requests per window |
+| `RateLimitWindowSeconds` | 60 | Rate limit window duration |
+| `EnableLlmModeration` | false | Use LLM for moderation |
+| `BlockedKeywords` | [] | Custom blocked words |
+| `BlockedPatterns` | [] | Custom regex patterns |
+| `DefaultAction` | Block | Action: Block, LogOnly, or Redact |
+
+### OpenTelemetry Integration
+
+Guardrails includes built-in OpenTelemetry instrumentation for distributed tracing and metrics.
+
+```csharp
+// Metrics and tracing are enabled by default
+var service = new GuardrailsService(options, metrics, enableTelemetry: true);
+
+// Or disable if needed
+var service = new GuardrailsService(enableTelemetry: false);
+```
+
+**Metrics exported:**
+| Metric | Type | Description |
+|--------|------|-------------|
+| `guardrails.validations.total` | Counter | Total validations performed |
+| `guardrails.validations.blocked` | Counter | Blocked validations |
+| `guardrails.validations.allowed` | Counter | Allowed validations |
+| `guardrails.violations` | Counter | Violations by type |
+| `guardrails.rate_limit.hits` | Counter | Rate limit violations |
+| `guardrails.validation.duration` | Histogram | Validation duration (ms) |
+
+**Tracing:**
+- Activity source: `AI.Workshop.Guardrails`
+- Activities: `guardrails.validate_input`, `guardrails.validate_output`, `guardrails.validator.{name}`
+
+**Aspire integration (automatic):**
+The ServiceDefaults already includes guardrails instrumentation. Metrics and traces appear in your configured OTLP exporter (e.g., Aspire Dashboard, Jaeger, Prometheus).
+
 ---
 
 ## 📁 Prompty Templates
@@ -212,10 +380,11 @@ All system prompts are managed using [Prompty](https://prompty.ai/) `.prompty` f
 
 | Project | Prompts |
 |---------|---------|
-| ConsoleChat.Ollama | `BookRecommendation`, `ServiceSuggestion`, `DocumentSearch` |
-| ConsoleChat.RAG | `GeneralAssistant`, `DocumentSearch`, `DocumentSearchSimple` |
-| ConsoleAgent | `AgentSmith`, `WeatherAssistant`, `PersonInfo`, `CroatianTranslator`, `StoryWriter`, `StoryEditor` |
-| WebApiAgent | `StoryWriter`, `StoryEditor` |
+| Console.VectorDemos | `BookRecommendation`, `ServiceSuggestion`, `DocumentSearch` |
+| Console.AgentChat | `GeneralAssistant`, `DocumentSearch`, `DocumentSearchSimple`, `PDFSummarization` |
+| Console.Agents | `AgentSmith`, `WeatherAssistant`, `PersonInfo`, `CroatianTranslator`, `StoryWriter`, `StoryEditor` |
+| WebApi.Agents | `StoryWriter`, `StoryEditor` |
+| ChatApp.Web | `DocumentSearch`, `DocumentSearchSimple`, `GeneralAssistant`, `PDFSummarization` |
 | MCP.ConsoleClient | `MonkeyAssistant`, `GitHubAssistant` |
 
 Example `.prompty` file:
@@ -239,12 +408,305 @@ user:
 
 ---
 
+## 🗄️ Embedding Caching
+
+The `AI.Workshop.Common.Caching` namespace provides caching wrappers for embedding generators to reduce API calls and improve performance.
+
+### In-Memory Caching
+
+```csharp
+using AI.Workshop.Common.Caching;
+
+// Option 1: Wrap existing generator
+var cachedGenerator = embeddingGenerator.WithCaching(options =>
+{
+    options.MaxCacheSize = 10000;           // Max cached embeddings
+    options.SlidingExpirationMinutes = 60;  // Cache duration
+    options.CleanupIntervalMinutes = 5;     // Cleanup frequency
+});
+
+// Option 2: DI registration with caching
+builder.Services.AddOllamaEmbeddingGeneratorWithCaching(configuration, options =>
+{
+    options.MaxCacheSize = 5000;
+    options.SlidingExpirationMinutes = 120;
+});
+
+// Access cache statistics
+var stats = cachedGenerator.GetStats();
+Console.WriteLine($"Hit rate: {stats.HitRate:F1}%");
+Console.WriteLine($"Cache size: {stats.CacheSize}");
+```
+
+### Distributed Caching (Redis, SQL Server)
+
+```csharp
+using AI.Workshop.Common.Caching;
+
+// For distributed scenarios
+var distributedGenerator = new DistributedCachedEmbeddingGenerator(
+    innerGenerator,
+    distributedCache,  // IDistributedCache (Redis, SQL, etc.)
+    new DistributedEmbeddingCacheOptions
+    {
+        KeyPrefix = "emb:",
+        SlidingExpiration = TimeSpan.FromHours(1)
+    });
+```
+
+### Cache Statistics
+
+| Property | Description |
+|----------|-------------|
+| `CacheHits` | Number of cache hits |
+| `CacheMisses` | Number of cache misses |
+| `CacheSize` | Current number of cached embeddings |
+| `HitRate` | Cache hit rate as percentage |
+
+---
+
+## 📝 TOON (Token-Oriented Object Notation)
+
+TOON is a compact data format that reduces LLM token usage by 30-60% compared to JSON. The `AI.Workshop.Common.Toon` namespace provides utilities for working with TOON.
+
+### Basic Usage
+
+```csharp
+using AI.Workshop.Common.Toon;
+
+// Serialize to TOON
+var data = new { id = 1, name = "Alice", roles = new[] { "admin", "user" } };
+var toon = ToonHelper.ToToon(data);
+// Output:
+// id: 1
+// name: Alice
+// roles[2]: admin,user
+
+// Deserialize from TOON
+var user = ToonHelper.FromToon<User>(toon);
+
+// Convert between JSON and TOON
+var toonFromJson = ToonHelper.JsonToToon(jsonString);
+var jsonFromToon = ToonHelper.ToonToJson(toonString);
+
+// Estimate token savings
+var savings = ToonHelper.EstimateTokenSavings(data);
+Console.WriteLine($"Savings: {savings.SavingsPercent:F1}%");
+```
+
+### Using TOON with Chat Clients
+
+```csharp
+using AI.Workshop.Common.Toon;
+
+// Send data as TOON in prompt (reduces tokens)
+var response = await chatClient.GetResponseWithToonDataAsync(
+    data: products,
+    userPrompt: "Which product is the most expensive?",
+    systemPrompt: "You analyze product data.",
+    dataLabel: "Products"
+);
+
+// Fluent prompt builder
+var messages = ToonPromptBuilder.Create()
+    .WithSystemPrompt("You are a data analyst.")
+    .WithData(salesData, "Sales Data")
+    .WithData(inventory, "Inventory")
+    .UseCodeBlocks()
+    .WithUserPrompt("Summarize the sales trends.")
+    .Build();
+
+var response = await chatClient.GetResponseAsync(messages);
+```
+
+### Parsing TOON Responses
+
+```csharp
+using AI.Workshop.Common.Toon;
+
+// Request structured response with schema
+var result = await chatClient.GetStructuredResponseAsync<ProductAnalysis>(
+    prompt: "Analyze this product catalog",
+    responseSchema: "bestSeller: string, averagePrice: number, totalProducts: number"
+);
+
+if (result.IsSuccess)
+{
+    Console.WriteLine($"Best seller: {result.Data.BestSeller}");
+}
+
+// Request with example (few-shot learning)
+var example = new ProductAnalysis { BestSeller = "Widget", AveragePrice = 29.99, TotalProducts = 100 };
+var result = await chatClient.GetStructuredResponseWithExampleAsync(
+    prompt: "Analyze sales data",
+    example: example,
+    description: "Product analysis report"
+);
+
+// Parse TOON from any response
+var parseResult = response.ParseToon<MyDataType>();
+var data = parseResult.GetDataOrDefault(fallbackValue);
+
+// Safe parsing
+if (response.TryParseToon<MyDataType>(out var parsed))
+{
+    // Use parsed data
+}
+```
+
+### TOON Format Benefits
+
+| Aspect | JSON | TOON |
+|--------|------|------|
+| **Syntax** | Verbose (quotes, braces) | Minimal (indentation-based) |
+| **Arrays** | Full key repetition | Tabular with header |
+| **Token Usage** | Baseline | 30-60% less |
+| **Readability** | Good | Excellent |
+
+---
+
+## 🎛️ Interactive Features
+
+Both the Console Chat and Aspire Blazor Chat support interactive toggles for Guardrails and TOON, with token stats always displayed.
+
+### Console Chat
+
+Press `[S]` in the agent menu to access settings:
+```
+╔═══════════════════════════════════════════════════╗
+║           AI Workshop - Settings Menu             ║
+╠═══════════════════════════════════════════════════╣
+║  [1] Guardrails: ENABLED - Content safety         ║
+║  [2] TOON Format: DISABLED                        ║
+║                                                   ║
+║  📊 Token stats are always displayed              ║
+║  [0] Back to main menu                            ║
+╚═══════════════════════════════════════════════════╝
+```
+
+### Aspire Blazor Chat (ChatApp.Web)
+
+Click the ⚙️ settings icon in the header to open the settings panel:
+- **Agent Selection** – Choose between DocumentSearch and PDFSummarization agents
+- Toggle **Guardrails** for content safety validation
+- Toggle **TOON** for token-efficient data formatting
+- **Token stats** are always displayed (no toggle needed)
+- View **session token summary** with reset button
+
+Active features are shown as badges: 📊 (Stats) 🛡️ (Guardrails) 📝 (TOON)
+
+### Token Tracking (Always On)
+
+Token usage is automatically tracked and displayed after each response:
+- **Per-response**: `📊 Tokens: X in / Y out = Z total`
+- **Session summary**: Total tokens, requests, and averages shown on exit (Console) or in settings panel (Blazor)
+- **TOON stats**: When TOON is enabled, character savings are shown alongside results
+
+### What Happens When Enabled
+
+| Feature | Input | Output |
+|---------|-------|--------|
+| **Guardrails** | Blocks/redacts unsafe content | Validates AI responses |
+| **TOON** | N/A | Formats search results compactly |
+| **Token Stats** | N/A | Shows TOON vs XML comparison |
+
+### Ollama Health Check
+
+Console apps automatically check Ollama availability on startup:
+```
+Checking Ollama connection...
+⣾ Connecting to http://localhost:11434/...
+✓ Connected to Ollama (version 0.9.0)
+```
+
+If Ollama is not running, helpful instructions are shown:
+```
+⚠ Ollama is not available at http://localhost:11434/
+Please ensure Ollama is running:
+  1. Install from https://ollama.ai
+  2. Run: ollama serve
+  3. Or use Aspire: dotnet run --project Aspire/AI.Workshop.ChatApp.AppHost
+```
+
+---
+
 ## 🔧 Configuration
 
-### Ollama Endpoint
-Default: `http://localhost:11434/`
+### AI Settings (appsettings.json)
 
-Configure in code or environment variables as needed.
+AI settings can be configured via `appsettings.json` using the `AI` section:
+
+```json
+{
+  "AI": {
+    "OllamaUri": "http://localhost:11434/",
+    "ChatModel": "llama3.2",
+    "EmbeddingModel": "all-minilm",
+    "VectorDimensions": 384
+  }
+}
+```
+
+**Dependency Injection (Recommended):**
+
+```csharp
+using AI.Workshop.Common;
+
+// ASP.NET Core / Web API
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddOllamaChatClient(builder.Configuration);
+// IChatClient is now available via DI
+
+// Console apps with Host
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddOllamaServices(builder.Configuration);  // Both chat + embeddings
+var host = builder.Build();
+
+var chatClient = host.Services.GetRequiredService<IChatClient>();
+var embedder = host.Services.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
+```
+
+**Manual Configuration:**
+
+```csharp
+// Load settings manually
+var aiSettings = builder.Configuration.GetAISettings();
+
+// Or configure inline
+builder.Services.AddOllamaServices(settings =>
+{
+    settings.OllamaUri = "http://my-ollama-server:11434/";
+    settings.ChatModel = "mistral";
+});
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `OllamaUri` | `http://localhost:11434/` | Ollama server endpoint |
+| `ChatModel` | `llama3.2` | Model for chat completions |
+| `EmbeddingModel` | `all-minilm` | Model for embeddings |
+| `VectorDimensions` | `384` | Embedding vector dimensions |
+
+| DI Extension | Description |
+|--------------|-------------|
+| `AddOllamaChatClient()` | Registers `IChatClient` singleton |
+| `AddOllamaEmbeddingGenerator()` | Registers `IEmbeddingGenerator` singleton |
+| `AddOllamaServices()` | Registers both chat and embedding clients |
+
+> **Note:** If the `AI` section is missing, defaults from `AIConstants` are used.
+
+### Vector Store Selection
+
+The VectorStore library provides two sets of ingestion classes for different backends:
+
+| Namespace | Key Type | Distance Function | Use With |
+|-----------|----------|-------------------|----------|
+| `Ingestion` | `string` | CosineDistance | SQLite-Vec |
+| `Ingestion.Qdrant` | `Guid` | DotProductSimilarity | Qdrant |
+
+Set `VECTOR_STORE` environment variable to `Qdrant` or `Sqlite` in the Aspire ChatApp.
+
+> **Note:** Separate namespaces exist because the `VectorStoreVectorAttribute` requires compile-time constants for distance function.
 
 ### GPU Acceleration (Aspire)
 

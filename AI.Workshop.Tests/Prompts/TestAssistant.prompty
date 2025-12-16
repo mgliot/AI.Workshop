@@ -1,0 +1,14 @@
+---
+name: Test Assistant
+description: A test prompty file for unit testing
+model:
+  api: chat
+  configuration:
+    type: ollama
+    model: llama3.2
+---
+system:
+You are a test assistant.
+
+user:
+{{question}}

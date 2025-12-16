@@ -4,15 +4,21 @@ namespace AI.Workshop.VectorStore;
 
 public class VectorModel
 {
+    /// <summary>
+    /// Vector dimensions for the all-minilm embedding model.
+    /// Must match AI.Workshop.Common.AIConstants.VectorDimensions
+    /// </summary>
+    private const int VectorDimensions = 384;
+
     [VectorStoreKey]
-    public int Key { get; set; } // This property will be used as the unique identifier for the vector data in the store.
+    public int Key { get; set; }
 
     [VectorStoreData]
-    public string Name { get; set; } // This property will be used to store the name of the vector data.
+    public string Name { get; set; } = string.Empty;
 
     [VectorStoreData]
-    public string Description { get; set; } // This property will be used to store a description of the vector data.
+    public string Description { get; set; } = string.Empty;
 
-    [VectorStoreVector(Dimensions: 384, DistanceFunction = DistanceFunction.CosineSimilarity)]
-    public ReadOnlyMemory<float> Vector { get; set; } // This property will be used to store the vector representation of the data.
+    [VectorStoreVector(Dimensions: VectorDimensions, DistanceFunction = DistanceFunction.CosineSimilarity)]
+    public ReadOnlyMemory<float> Vector { get; set; }
 }

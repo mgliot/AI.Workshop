@@ -11,7 +11,11 @@ public class IngestedChunk : IngestedChunk<string>
 public abstract class IngestedChunk<TKey> : IIngestedChunk<TKey>
     where TKey : notnull
 {
-    protected const int VectorDimensions = 384; // 384 is the default vector size for the all-minilm embedding model
+    /// <summary>
+    /// Vector dimensions for the all-minilm embedding model.
+    /// Must match AI.Workshop.Common.AIConstants.VectorDimensions
+    /// </summary>
+    protected const int VectorDimensions = 384;
 
     [VectorStoreKey]
     public required TKey Key { get; set; }

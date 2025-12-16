@@ -1,0 +1,87 @@
+.guardrail-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin: 0.5rem 0;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.guardrail-alert.blocked {
+    background: rgba(244, 67, 54, 0.15);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.guardrail-alert.redacted {
+    background: rgba(255, 152, 0, 0.15);
+    border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.guardrail-alert.info {
+    background: rgba(33, 150, 243, 0.15);
+    border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.alert-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.alert-content {
+    flex: 1;
+}
+
+.alert-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.guardrail-alert.blocked .alert-title {
+    color: #f44336;
+}
+
+.guardrail-alert.redacted .alert-title {
+    color: #ff9800;
+}
+
+.guardrail-alert.info .alert-title {
+    color: #2196f3;
+}
+
+.alert-message {
+    font-size: 0.85rem;
+    color: #ccc;
+}
+
+.alert-violation {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 0.25rem;
+}
+
+.alert-close {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 1rem;
+    transition: color 0.2s;
+}
+
+.alert-close:hover {
+    color: #fff;
+}
