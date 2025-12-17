@@ -382,7 +382,7 @@ All system prompts are managed using [Prompty](https://prompty.ai/) `.prompty` f
 |---------|---------|
 | Console.VectorDemos | `BookRecommendation`, `ServiceSuggestion`, `DocumentSearch` |
 | Console.AgentChat | `GeneralAssistant`, `DocumentSearch`, `DocumentSearchSimple`, `PDFSummarization` |
-| Console.Agents | `AgentSmith`, `WeatherAssistant`, `PersonInfo`, `CroatianTranslator`, `StoryWriter`, `StoryEditor` |
+| Console.Agents | `AgentSmith`, `WeatherAssistant`, `PersonInfo`, `SpanishTranslator`, `StoryWriter`, `StoryEditor` |
 | WebApi.Agents | `StoryWriter`, `StoryEditor` |
 | ChatApp.Web | `DocumentSearch`, `DocumentSearchSimple`, `GeneralAssistant`, `PDFSummarization` |
 | MCP.ConsoleClient | `MonkeyAssistant`, `GitHubAssistant` |

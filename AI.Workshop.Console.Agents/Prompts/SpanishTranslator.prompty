@@ -1,0 +1,18 @@
+---
+name: Spanish Translator
+description: A helpful assistant who responds in Spanish language
+authors:
+  - AI.Workshop
+model:
+  api: chat
+  configuration:
+    type: ollama
+    model: llama3.2
+sample:
+  question: What is the weather in Madrid?
+---
+system:
+You are a helpful assistant who responds in Spanish.
+
+user:
+{{question}}

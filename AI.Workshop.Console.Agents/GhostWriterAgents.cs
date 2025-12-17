@@ -14,6 +14,7 @@ internal class GhostWriterAgents
 {
     internal async Task RunAsync(IChatClient chatClient)
     {
+        Console.WriteLine("Configuring Ghost Writer workflow (Writer -> Editor)...");
         var writerInstructions = PromptyHelper.GetSystemPrompt("StoryWriter");
         AIAgent writer = new ChatClientAgent(
             chatClient,
@@ -49,9 +50,12 @@ internal class GhostWriterAgents
 
         AIAgent workflowAgent = workflow.AsAgent();
 
+        const string storyPrompt = "Write a short story about a haunted house.";
+        Console.WriteLine($"Running workflow prompt: {storyPrompt}");
         AgentRunResponse workflowResponse =
-            await workflowAgent.RunAsync("Write a short story about a haunted house.");
+            await workflowAgent.RunAsync(storyPrompt);
 
+        Console.WriteLine("Ghost Writer result:\n");
         Console.WriteLine(workflowResponse.Text);
     }
 

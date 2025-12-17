@@ -8,25 +8,27 @@ Console application demonstrating Microsoft Agent Framework capabilities with va
 graph TB
     subgraph "Console Application"
         MAIN[Program.cs]
-        MENU[Demo Menu]
+        DEMOS[Sequential Demos]
     end
     
     subgraph "Demos"
-        D1[Weather Agent]
-        D2[Person Info Agent]
-        D3[Story Pipeline]
-        D4[Translation Agent]
+        D1[GhostWriter Workflow]
+        D2[Agent Smith Prompt]
+        D3[Agent Smith Conversation]
+        D4[Weather Function Calling]
+        D5[Structured Output]
+        D6[Agent-as-Tool]
     end
     
     subgraph "Agent Framework"
         CCA[ChatClientAgent]
-        RT[AgentRuntime]
-        WF[Workflow Patterns]
+        WF[Workflow Builder]
+        AAT[Agent as AIFunction]
     end
     
     subgraph "Tools"
-        WT[WeatherTool]
-        PT[PersonTool]
+        WT[WeatherTools]
+        FMT[FormatStory/GetAuthor]
     end
     
     subgraph "AI Services"
@@ -34,105 +36,144 @@ graph TB
     end
     
     subgraph "Prompty Templates"
-        P1[WeatherAssistant.prompty]
-        P2[PersonInfo.prompty]
-        P3[StoryWriter.prompty]
-        P4[StoryEditor.prompty]
-        P5[CroatianTranslator.prompty]
+        P1[StoryWriter.prompty]
+        P2[StoryEditor.prompty]
+        P3[AgentSmith.prompty]
+        P4[WeatherAssistant.prompty]
+        P5[PersonInfo.prompty]
+        P6[SpanishTranslator.prompty]
     end
     
-    MAIN --> MENU --> D1 & D2 & D3 & D4
-    D1 & D2 & D3 & D4 --> CCA --> RT
-    D1 --> WT
-    D2 --> PT
+    MAIN --> DEMOS --> D1 & D2 & D3 & D4 & D5 & D6
+    D1 --> WF --> CCA
+    D2 & D3 --> CCA
+    D4 & D5 --> CCA
+    D6 --> AAT --> CCA
+    D1 --> FMT
+    D4 & D6 --> WT
     CCA --> OLL
-    D1 --> P1
-    D2 --> P2
-    D3 --> P3 & P4
-    D4 --> P5
+    D1 --> P1 & P2
+    D2 & D3 --> P3
+    D4 --> P4
+    D5 --> P5
+    D6 --> P4 & P6
 ```
 
 ## Agent Patterns
 
-### 1. Tool-Calling Agent (Weather)
+### 1. Sequential Workflow (GhostWriter)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Workflow
+    participant Writer
+    participant Editor
+    participant LLM
+    
+    User->>Workflow: "Write a story about a haunted house"
+    Workflow->>Writer: Generate story
+    Writer->>LLM: Write story prompt + tools
+    LLM->>Writer: Call GetAuthor(), FormatStory()
+    Writer-->>Workflow: Draft story
+    Workflow->>Editor: Edit story
+    Editor->>LLM: Edit prompt
+    LLM-->>Editor: Polished story
+    Editor-->>Workflow: Final story
+    Workflow-->>User: Published story
+```
+
+### 2. Single Prompt Agent (Agent Smith)
 
 ```mermaid
 sequenceDiagram
     participant User
     participant Agent
     participant LLM
-    participant WeatherTool
     
-    User->>Agent: What's the weather in Zagreb?
-    Agent->>LLM: Process with tools
-    LLM->>WeatherTool: get_weather("Zagreb")
-    WeatherTool-->>LLM: {"temp": 22, "conditions": "Sunny"}
-    LLM-->>Agent: It's 22°C and sunny in Zagreb
+    User->>Agent: "What is the matrix?"
+    Agent->>LLM: Process with AgentSmith persona
+    LLM-->>Agent: Philosophical response
     Agent-->>User: Response
 ```
 
-### 2. Sequential Pipeline (Story Writer → Editor)
+### 3. Multi-turn Conversation (Agent Smith)
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant Runtime
-    participant Writer
-    participant Editor
+    participant Agent
+    participant Thread
     participant LLM
     
-    User->>Runtime: Topic: "Space exploration"
-    Runtime->>Writer: Generate story
-    Writer->>LLM: Write story prompt
-    LLM-->>Writer: Draft story
-    Writer->>Runtime: Pass to Editor
-    Runtime->>Editor: Edit story
-    Editor->>LLM: Edit prompt
-    LLM-->>Editor: Polished story
-    Editor-->>Runtime: Final story
-    Runtime-->>User: Published story
+    User->>Agent: "I know what you are, Smith."
+    Agent->>Thread: Add to conversation history
+    Agent->>LLM: Process with context
+    LLM-->>Agent: Response 1
+    Agent-->>User: Response
+    
+    User->>Agent: "You're just a program..."
+    Agent->>Thread: Add to history
+    Agent->>LLM: Process with full context
+    LLM-->>Agent: Response 2
+    Agent-->>User: Contextual response
 ```
 
-### 3. Multi-Step Agent (Person Info)
+### 4. Tool-Calling Agent (Weather)
 
 ```mermaid
-graph LR
-    subgraph "Tools"
-        T1[GetPersonInfo]
-        T2[GetContactDetails]
-        T3[GetEmploymentHistory]
-    end
+sequenceDiagram
+    participant User
+    participant Agent
+    participant LLM
+    participant WeatherTools
     
-    subgraph "Agent"
-        Q[Query]
-        TC[Tool Calls]
-        AGG[Aggregate]
-        RES[Response]
-    end
-    
-    Q --> TC
-    TC --> T1 & T2 & T3
-    T1 & T2 & T3 --> AGG --> RES
+    User->>Agent: "What's the weather in Madrid?"
+    Agent->>LLM: Process with tools
+    LLM->>WeatherTools: GetWeather("Madrid")
+    WeatherTools-->>LLM: "cloudy with high of 15°C"
+    LLM-->>Agent: Formatted weather response
+    Agent-->>User: Response
 ```
 
-### 4. Stateless Translation Agent
+### 5. Structured Output (PersonInfo)
 
 ```mermaid
-graph LR
-    subgraph "Input"
-        EN[English Text]
-    end
+sequenceDiagram
+    participant User
+    participant Agent
+    participant LLM
+    participant Parser
     
-    subgraph "Agent"
-        P[CroatianTranslator.prompty]
-        LLM[Ollama]
-    end
+    User->>Agent: "Tell me about Neo from The Matrix"
+    Agent->>LLM: Request JSON-structured response
+    LLM-->>Agent: Raw JSON response
+    Agent->>Parser: Extract and clean JSON
+    Parser-->>Agent: PersonInfo object
+    Agent-->>User: Name, Age, Occupation
+```
+
+### 6. Agent-as-Tool (Spanish Translator + Weather)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant SpanishAgent
+    participant WeatherAgent
+    participant LLM
+    participant WeatherTools
     
-    subgraph "Output"
-        HR[Croatian Text]
-    end
-    
-    EN --> P --> LLM --> HR
+    User->>SpanishAgent: "What is the weather in Madrid?"
+    SpanishAgent->>LLM: Process with WeatherAgent as tool
+    LLM->>WeatherAgent: AsAIFunction() call
+    WeatherAgent->>LLM: Process weather request
+    LLM->>WeatherTools: GetWeather("Madrid")
+    WeatherTools-->>LLM: Weather data
+    LLM-->>WeatherAgent: English response
+    WeatherAgent-->>SpanishAgent: Weather info
+    SpanishAgent->>LLM: Translate to Spanish
+    LLM-->>SpanishAgent: Spanish response
+    SpanishAgent-->>User: Response in Spanish
 ```
 
 ## Microsoft Agent Framework
@@ -141,73 +182,91 @@ graph LR
 classDiagram
     class ChatClientAgent {
         +Name: string
-        +SystemPrompt: string
-        +Tools: AIFunction[]
-        +HandleAsync(message)
+        +ChatOptions: ChatOptions
+        +RunAsync(prompt)
+        +GetNewThread()
     }
     
-    class AgentRuntime {
-        +RegisterAgent(agent)
-        +SendMessageAsync(agent, message)
+    class AgentWorkflowBuilder {
+        +BuildSequential(agents)
+    }
+    
+    class AIAgent {
+        +AsAIFunction()
+        +RunAsync(prompt, thread)
     }
     
     class AIFunction {
         +Name: string
         +Description: string
-        +Parameters: JsonSchema
         +InvokeAsync(args)
     }
     
-    AgentRuntime --> ChatClientAgent
-    ChatClientAgent --> AIFunction
+    ChatClientAgent --|> AIAgent
+    AgentWorkflowBuilder --> AIAgent
+    AIAgent --> AIFunction
 ```
 
 ## Demo Descriptions
 
-### Weather Agent
-- **Pattern:** Tool-calling
-- **Tools:** `get_weather(city)`
-- **Prompt:** WeatherAssistant.prompty
-- **Demo:** Natural language weather queries
-
-### Person Info Agent
-- **Pattern:** Multi-tool orchestration
-- **Tools:** `GetPersonInfo`, `GetContactDetails`, `GetEmploymentHistory`
-- **Prompt:** PersonInfo.prompty
-- **Demo:** Aggregate information from multiple sources
-
-### Story Pipeline
-- **Pattern:** Sequential workflow
+### 1. GhostWriter Workflow
+- **Pattern:** Sequential workflow (AgentWorkflowBuilder)
 - **Agents:** Writer → Editor
+- **Tools:** `GetAuthor()`, `FormatStory()`
 - **Prompts:** StoryWriter.prompty, StoryEditor.prompty
-- **Demo:** Two-agent content creation pipeline
+- **Demo:** Two-agent content creation pipeline with tool calling
 
-### Translation Agent
-- **Pattern:** Stateless transformation
+### 2. Agent Smith Prompt
+- **Pattern:** Single prompt
 - **Tools:** None
-- **Prompt:** CroatianTranslator.prompty
-- **Demo:** Direct text translation
+- **Prompt:** AgentSmith.prompty
+- **Demo:** Single question/answer with Matrix-themed persona
+
+### 3. Agent Smith Conversation
+- **Pattern:** Multi-turn conversation with AgentThread
+- **Tools:** None
+- **Prompt:** AgentSmith.prompty
+- **Demo:** Context-aware conversation using thread history
+
+### 4. Weather Function Calling
+- **Pattern:** Tool-calling
+- **Tools:** `GetWeather(location)`
+- **Prompt:** WeatherAssistant.prompty
+- **Demo:** Natural language weather queries with function invocation
+
+### 5. Structured Output (PersonInfo)
+- **Pattern:** JSON structured output
+- **Tools:** None
+- **Prompt:** PersonInfo.prompty
+- **Demo:** Parse LLM response into typed PersonInfo object
+
+### 6. Agent-as-Tool (Spanish Translator)
+- **Pattern:** Agent composition via AsAIFunction()
+- **Tools:** WeatherAgent (as AIFunction)
+- **Prompts:** WeatherAssistant.prompty, SpanishTranslator.prompty
+- **Demo:** Translator agent uses weather agent as a callable tool
 
 ## Project Structure
 
 ```
 AI.Workshop.Console.Agents/
-├── Program.cs              # Entry point with menu
-├── Demos/
-│   ├── WeatherAgentDemo.cs
-│   ├── PersonInfoDemo.cs
-│   ├── StoryPipelineDemo.cs
-│   └── TranslationDemo.cs
-├── Tools/
-│   ├── WeatherTool.cs
-│   └── PersonTool.cs
-├── Prompts/
-│   ├── WeatherAssistant.prompty
-│   ├── PersonInfo.prompty
-│   ├── StoryWriter.prompty
-│   ├── StoryEditor.prompty
-│   └── CroatianTranslator.prompty
-└── AgentSmith.prompty      # General agent template
+├── Program.cs                      # Entry point - runs all demos sequentially
+├── GhostWriterAgents.cs            # Sequential workflow demo (Writer → Editor)
+├── AgentSmithPromptDemo.cs         # Single prompt demo
+├── AgentSmithConversationDemo.cs   # Multi-turn conversation demo
+├── WeatherFunctionDemo.cs          # Function calling demo
+├── StructuredOutputDemo.cs         # JSON structured output parsing
+├── AgentAsToolDemo.cs              # Agent-as-tool pattern demo
+├── WeatherTools.cs                 # Static weather tool functions
+├── PersonInfo.cs                   # PersonInfo model class
+├── appsettings.json                # Configuration
+└── Prompts/
+    ├── AgentSmith.prompty          # Matrix-themed agent persona
+    ├── WeatherAssistant.prompty    # Weather agent instructions
+    ├── PersonInfo.prompty          # Structured output instructions
+    ├── StoryWriter.prompty         # Creative writing agent
+    ├── StoryEditor.prompty         # Story editing agent
+    └── SpanishTranslator.prompty   # Spanish translation agent
 ```
 
 ## Technologies
@@ -216,9 +275,10 @@ AI.Workshop.Console.Agents/
 |------------|---------|---------|
 | .NET | 10.0 | Runtime |
 | Microsoft.Agents.AI | 0.8.2 | Agent Framework |
-| Ollama | - | LLM backend |
+| Microsoft.Extensions.AI | 10.0.1 | AI abstractions |
+| Ollama | - | LLM backend (llama3.2) |
 | Prompty.Core | 0.2.3 | Prompt templates |
-| Spectre.Console | - | Interactive UI |
+| AI.Workshop.Common | - | Shared utilities, health checks |
 
 ## Usage
 
@@ -227,15 +287,36 @@ cd AI.Workshop.Console.Agents
 dotnet run
 ```
 
-**Menu Options:**
+**Demo Sequence:**
+The application runs all demos sequentially with "Press any key to continue..." between each:
+
 ```
-╔═══════════════════════════════════════════════════╗
-║        AI.Workshop - Agent Framework Demos        ║
-╠═══════════════════════════════════════════════════╣
-║  [1] Weather Agent (Tool Calling)                 ║
-║  [2] Person Info Agent (Multi-Tool)               ║
-║  [3] Story Pipeline (Writer → Editor)             ║
-║  [4] Translation Agent (Croatian)                 ║
-║  [0] Exit                                         ║
-╚═══════════════════════════════════════════════════╝
+=== Ghost Writer Workflow ===
+Configuring Ghost Writer workflow (Writer -> Editor)...
+Running workflow prompt: Write a short story about a haunted house.
+[Story output]
+
+=== Matrix Agents - Single Prompt ===
+Prompting Agent Smith with a single question...
+Neo: What is the matrix?
+Agent Smith: [Response]
+
+=== Matrix Agents - Multi-turn Conversation ===
+Continuing the conversation thread with Agent Smith...
+[Multi-turn dialogue]
+
+=== Weather Agent - Function Calling ===
+Weather agent will call the GetWeather function to answer the user.
+User: What's the weather like in Madrid?
+Weather Agent: [Response with tool call]
+
+=== PersonInfo Agent - Structured Output ===
+Raw response: {"name": "Neo", "age": 33, "occupation": "Hacker"}
+Parsed structured output:
+Name: Neo, Age: 33, Occupation: Hacker
+
+=== SpanishTranslator Agent - Agent-as-Tool Workflow ===
+Using the translator agent to call the weather agent as a tool...
+User: What is the weather in Madrid?
+Spanish Translator: [Spanish response]
 ```
