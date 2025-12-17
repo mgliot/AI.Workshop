@@ -4,7 +4,6 @@ using AI.Workshop.Guardrails;
 using AI.Workshop.VectorStore.Ingestion;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.VectorData;
-using Octokit;
 using QdrantBased = AI.Workshop.VectorStore.Ingestion.Qdrant;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -108,19 +107,5 @@ else
 {
     throw new InvalidOperationException("Please set the VECTOR_STORE configuration to either 'Qdrant' or 'Sqlite'.");
 }
-
-var gitHubKey = builder.Configuration["GITHUB_APIKEY"];
-GitHubClient? gitHubClient = null;
-if (!string.IsNullOrEmpty(gitHubKey))
-{
-    gitHubClient = new GitHubClient(new ProductHeaderValue("AI-Workshop.ChatApp.Web"))
-    {
-        Credentials = new Credentials(gitHubKey)
-    };
-}
-
-//await DataIngestor.IngestDataAsync(
-//    app.Services,
-//    new GitHubMarkdownSource(gitHubClient, "dedalusmax", "dice-and-roll2", "/"));
 
 app.Run();

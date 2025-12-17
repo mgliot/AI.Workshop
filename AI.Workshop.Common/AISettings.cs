@@ -32,6 +32,21 @@ public class AISettings
     public int VectorDimensions { get; set; } = AIConstants.VectorDimensions;
 
     /// <summary>
+    /// Qdrant vector database host
+    /// </summary>
+    public string QdrantHost { get; set; } = AIConstants.DefaultQdrantHost;
+
+    /// <summary>
+    /// Qdrant gRPC port (default: 6334). Note: This must be the gRPC port, not the HTTP port (6333).
+    /// </summary>
+    public int QdrantGrpcPort { get; set; } = AIConstants.DefaultQdrantGrpcPort;
+
+    /// <summary>
+    /// Qdrant API key for authentication. Leave empty for no authentication.
+    /// </summary>
+    public string QdrantApiKey { get; set; } = AIConstants.DefaultQdrantApiKey;
+
+    /// <summary>
     /// Gets the Ollama URI as a Uri object
     /// </summary>
     public Uri GetOllamaUri() => new(OllamaUri);

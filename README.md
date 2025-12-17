@@ -27,9 +27,9 @@ Whether you're exploring **prompt engineering**, **semantic search**, **AI agent
 
 | Project | Purpose | Docs |
 |---------|---------|------|
-| **AI.Workshop.Console.VectorDemos** | Vector store demos with SQLite-Vec and Qdrant | [📐](./docs/AI.Workshop.Console.VectorDemos.md) |
-| **AI.Workshop.Console.AgentChat** | Interactive agent navigator with RAG workflows | [📐](./docs/AI.Workshop.Console.AgentChat.md) |
-| **AI.Workshop.Console.Agents** | Microsoft Agent Framework demos (workflows, tools, multi-agent) | [📐](./docs/AI.Workshop.Console.Agents.md) |
+| **AI.Workshop.Console.VectorDemos** | Compare vector backends: In-Memory, SQLite-Vec, Qdrant | [📐](./docs/AI.Workshop.Console.VectorDemos.md) |
+| **AI.Workshop.Console.AgentChat** | Agent progression: Chat → Tools → RAG → Summarization | [📐](./docs/AI.Workshop.Console.AgentChat.md) |
+| **AI.Workshop.Console.Agents** | Microsoft Agent Framework demos (workflows, multi-agent) | [📐](./docs/AI.Workshop.Console.Agents.md) |
 
 ### Web Applications
 
@@ -642,7 +642,10 @@ AI settings can be configured via `appsettings.json` using the `AI` section:
     "OllamaUri": "http://localhost:11434/",
     "ChatModel": "llama3.2",
     "EmbeddingModel": "all-minilm",
-    "VectorDimensions": 384
+    "VectorDimensions": 384,
+    "QdrantHost": "localhost",
+    "QdrantGrpcPort": 6334,
+    "QdrantApiKey": ""
   }
 }
 ```
@@ -686,6 +689,9 @@ builder.Services.AddOllamaServices(settings =>
 | `ChatModel` | `llama3.2` | Model for chat completions |
 | `EmbeddingModel` | `all-minilm` | Model for embeddings |
 | `VectorDimensions` | `384` | Embedding vector dimensions |
+| `QdrantHost` | `localhost` | Qdrant vector database host |
+| `QdrantGrpcPort` | `6334` | Qdrant gRPC port (not HTTP 6333) |
+| `QdrantApiKey` | `""` | Qdrant API key (empty = no auth) |
 
 | DI Extension | Description |
 |--------------|-------------|

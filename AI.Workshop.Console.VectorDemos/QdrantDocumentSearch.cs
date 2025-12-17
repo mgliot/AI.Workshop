@@ -17,10 +17,23 @@ internal class QdrantDocumentSearch : IDisposable
     private readonly OllamaApiClient _embeddingClient;
     private readonly IChatClient _chatClientInterface;
     private readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
+    private readonly string _qdrantHost;
+    private readonly int _qdrantGrpcPort;
+    private readonly string _qdrantApiKey;
     private SemanticSearch? _semanticSearch;
     private bool _disposed;
 
-    public QdrantDocumentSearch(string ollamaUri, string chatModel, string embeddingModel)
+    /// <summary>
+    /// Creates a new QdrantDocumentSearch instance.
+    /// </summary>
+    /// <param name="ollamaUri">Ollama server URI</param>
+    /// <param name="chatModel">Chat model name</param>
+    /// <param name="embeddingModel">Embedding model name</param>
+    /// <param name="qdrantHost">Qdrant server host</param>
+    /// <param name="qdrantGrpcPort">Qdrant gRPC port (default: 6334). Must be the gRPC port, not HTTP (6333).</param>
+    /// <param name="qdrantApiKey">Qdrant API key for authentication. Leave empty for no authentication.</param>
+    public QdrantDocumentSearch(string ollamaUri, string chatModel, string embeddingModel, 
+        string qdrantHost = "localhost", int qdrantGrpcPort = 6334, string qdrantApiKey = "")
     {
         // for testing the example, run the docker container with:
         // docker run -p 6333:6333 -p 6334:6334 --name qdrant-db qdrant/qdrant
@@ -33,11 +46,24 @@ internal class QdrantDocumentSearch : IDisposable
         // OllamaApiClient implements IEmbeddingGenerator
         _embeddingClient = new OllamaApiClient(uri, embeddingModel);
         _embeddingGenerator = _embeddingClient;
+
+        _qdrantHost = qdrantHost;
+        _qdrantGrpcPort = qdrantGrpcPort;
+        _qdrantApiKey = qdrantApiKey;
+    }
+
+    private QdrantClient CreateQdrantClient()
+    {
+        if (string.IsNullOrEmpty(_qdrantApiKey))
+        {
+            return new QdrantClient(_qdrantHost, _qdrantGrpcPort);
+        }
+        return new QdrantClient(_qdrantHost, _qdrantGrpcPort, apiKey: _qdrantApiKey);
     }
 
     internal async Task TestQdrantAsync()
     {
-        var client = new QdrantClient("localhost", 6334);
+        var client = CreateQdrantClient();
 
         if (!await client.CollectionExistsAsync("test_collection"))
         {
@@ -110,7 +136,7 @@ internal class QdrantDocumentSearch : IDisposable
 
     internal async Task<DataIngestor> QdrantSetupAsync()
     {
-        var client = new QdrantClient("localhost", 6334);
+        var client = CreateQdrantClient();
 
         var store = new QdrantVectorStore(client, true,
             new QdrantVectorStoreOptions() { EmbeddingGenerator = _embeddingGenerator });

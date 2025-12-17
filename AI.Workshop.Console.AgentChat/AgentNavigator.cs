@@ -12,11 +12,17 @@ using System.Text;
 namespace AI.Workshop.ConsoleApps.AgentChat;
 
 /// <summary>
-/// Available agent/prompt types that users can select
+/// Available agent/prompt types that users can select.
+/// Organized as a learning progression from simple to advanced.
 /// </summary>
 public enum AgentType
 {
-    GeneralAssistant,
+    // Step-by-step RAG learning progression
+    Step1_BasicChat,
+    Step2_ChatWithTools,
+    Step3_ToolsDemo,
+    
+    // Full RAG implementations
     DocumentSearch,
     DocumentSearchSimple,
     PDFSummarization
@@ -31,22 +37,101 @@ internal class AgentNavigator : IDisposable
     private readonly OllamaApiClient _embeddingClient;
     private readonly IChatClient _client;
     private readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
+    private readonly string _ollamaUri;
+    private readonly string _chatModel;
     private readonly ChatSettings _settings = new();
     private readonly GuardrailsService _guardrails;
     private readonly TokenUsageTracker _tokenTracker = new();
     private SemanticSearch? _semanticSearch;
     private bool _disposed;
 
-    private static readonly Dictionary<AgentType, string> AgentDescriptions = new()
+    private static readonly Dictionary<AgentType, (string Title, string Description, string[] LearningPoints)> AgentInfo = new()
     {
-        { AgentType.GeneralAssistant, "General purpose assistant with tool support" },
-        { AgentType.DocumentSearch, "Search documents with detailed citations" },
-        { AgentType.DocumentSearchSimple, "Simple document search assistant" },
-        { AgentType.PDFSummarization, "Summarize PDF documents chapter by chapter" }
+        {
+            AgentType.Step1_BasicChat,
+            (
+                "Step 1: Basic Chat",
+                "Simple chat loop with conversation history - no tools.",
+                [
+                    "• Pure LLM interaction with streaming responses",
+                    "• Conversation history for context retention",
+                    "• System prompt defines assistant behavior",
+                    "• Foundation for understanding chat mechanics"
+                ]
+            )
+        },
+        {
+            AgentType.Step2_ChatWithTools,
+            (
+                "Step 2: Chat + Tools",
+                "Adds function calling with a simple CurrentTime tool.",
+                [
+                    "• Introduces AIFunctionFactory for tool creation",
+                    "• LLM decides when to call tools",
+                    "• UseFunctionInvocation() middleware",
+                    "• Tool results integrated into responses"
+                ]
+            )
+        },
+        {
+            AgentType.Step3_ToolsDemo,
+            (
+                "Step 3: Multi-Tool Demo",
+                "Shopping cart demo with multiple tools (pricing, cart management).",
+                [
+                    "• Multiple tools working together",
+                    "• Stateful tool (Cart class maintains state)",
+                    "• LLM orchestrates tool calls",
+                    "• Real-world function calling pattern"
+                ]
+            )
+        },
+        {
+            AgentType.DocumentSearch,
+            (
+                "Document Search (Full RAG)",
+                "Complete RAG with vector store, semantic search, and citations.",
+                [
+                    "• PDF ingestion with chunking",
+                    "• SQLite-Vec vector storage",
+                    "• Semantic search as an LLM tool",
+                    "• Detailed citations with page numbers"
+                ]
+            )
+        },
+        {
+            AgentType.DocumentSearchSimple,
+            (
+                "Document Search (Simple)",
+                "Simplified RAG with minimal system prompt.",
+                [
+                    "• Same RAG pipeline as full version",
+                    "• Simpler system prompt for comparison",
+                    "• Shows impact of prompt engineering",
+                    "• Good for testing prompt variations"
+                ]
+            )
+        },
+        {
+            AgentType.PDFSummarization,
+            (
+                "PDF Summarization",
+                "Advanced RAG for document summarization with list tools.",
+                [
+                    "• ListDocuments tool to discover available PDFs",
+                    "• Chapter-by-chapter summarization",
+                    "• Higher temperature for creative summaries",
+                    "• Longer context window (4000 tokens)"
+                ]
+            )
+        }
     };
 
     public AgentNavigator(string ollamaUri, string chatModel, string embeddingModel)
     {
+        _ollamaUri = ollamaUri;
+        _chatModel = chatModel;
+        
         var uri = new Uri(ollamaUri);
 
         _chatClient = new OllamaApiClient(uri, chatModel);
@@ -80,9 +165,11 @@ internal class AgentNavigator : IDisposable
     {
         Console.Clear();
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
-        Console.WriteLine("║           AI Workshop - Agent Selection Menu               ║");
-        Console.WriteLine("╠════════════════════════════════════════════════════════════╣");
+        Console.WriteLine("╔════════════════════════════════════════════════════════════════════════╗");
+        Console.WriteLine("║              AI Workshop - Agent Chat Demos                            ║");
+        Console.WriteLine("║                                                                        ║");
+        Console.WriteLine("║  Learn AI agent capabilities from basic chat to full RAG               ║");
+        Console.WriteLine("╠════════════════════════════════════════════════════════════════════════╣");
         
         // Show current settings
         Console.ForegroundColor = ConsoleColor.White;
@@ -90,27 +177,49 @@ internal class AgentNavigator : IDisposable
         _settings.PrintStatus();
         
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine("╠════════════════════════════════════════════════════════════╣");
+        Console.WriteLine("╠════════════════════════════════════════════════════════════════════════╣");
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine("║  LEARNING PROGRESSION:                                                 ║");
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("╠════════════════════════════════════════════════════════════════════════╣");
         Console.ResetColor();
 
         var agents = Enum.GetValues<AgentType>();
         for (int i = 0; i < agents.Length; i++)
         {
             var agent = agents[i];
+            var info = AgentInfo[agent];
+
+            // Add separator before RAG section
+            if (agent == AgentType.DocumentSearch)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("╠════════════════════════════════════════════════════════════════════════╣");
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.WriteLine("║  FULL RAG IMPLEMENTATIONS:                                             ║");
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("╠════════════════════════════════════════════════════════════════════════╣");
+            }
+
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write($"║  [{i + 1}] ");
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write($"{agent,-25}");
+            Console.Write($"{info.Title,-28}");
             Console.ForegroundColor = ConsoleColor.Gray;
-            Console.WriteLine($" - {AgentDescriptions[agent],-20}");
+
+            // Truncate description to fit
+            var desc = info.Description.Length > 38 ? info.Description[..35] + "..." : info.Description;
+            Console.WriteLine($" {desc,-38} ║");
         }
 
-        Console.ForegroundColor = ConsoleColor.Magenta;
-        Console.WriteLine("║  [S] Settings - Toggle Guardrails, TOON, Stats");
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.WriteLine("║  [0] Exit");
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
+        Console.WriteLine("╠════════════════════════════════════════════════════════════════════════╣");
+        Console.ForegroundColor = ConsoleColor.Magenta;
+        Console.WriteLine("║  [S] Settings - Toggle Guardrails, TOON                                ║");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine("║  [0] Exit                                                              ║");
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("╚════════════════════════════════════════════════════════════════════════╝");
         Console.ResetColor();
 
         Console.Write("\nSelect an option: ");
@@ -232,12 +341,28 @@ internal class AgentNavigator : IDisposable
         _tokenTracker.Reset();
         
         Console.Clear();
+        var info = AgentInfo[agentType];
+
+        // Show demo header with learning points
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine($"═══ {agentType} Agent ═══");
+        Console.WriteLine($"═══════════════════════════════════════════════════════════════════════════");
+        Console.WriteLine($"  {info.Title}");
+        Console.WriteLine($"═══════════════════════════════════════════════════════════════════════════");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine($"\n  {info.Description}\n");
+
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("  What this demo shows:");
+        Console.ForegroundColor = ConsoleColor.Gray;
+        foreach (var point in info.LearningPoints)
+        {
+            Console.WriteLine($"  {point}");
+        }
+        Console.WriteLine();
         
         // Show active settings (token tracking always on)
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.Write("Active: ");
+        Console.Write("  Active: ");
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.Write("📊 Stats ");
         if (_settings.GuardrailsEnabled)
@@ -251,19 +376,36 @@ internal class AgentNavigator : IDisposable
             Console.Write("📝 TOON ");
         }
         Console.WriteLine();
-        Console.WriteLine();
+
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine($"═══════════════════════════════════════════════════════════════════════════\n");
         Console.ResetColor();
 
-        var systemPrompt = PromptyHelper.GetSystemPrompt(agentType.ToString());
+        // Get system prompt - use GeneralAssistant for step demos that don't have their own
+        var promptName = agentType switch
+        {
+            AgentType.Step1_BasicChat => "GeneralAssistant",
+            AgentType.Step2_ChatWithTools => "GeneralAssistant",
+            AgentType.Step3_ToolsDemo => "GeneralAssistant",
+            _ => agentType.ToString()
+        };
+        
+        var systemPrompt = PromptyHelper.GetSystemPrompt(promptName);
         
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine($"System: {systemPrompt.Substring(0, Math.Min(200, systemPrompt.Length))}...\n");
+        Console.WriteLine($"System prompt: {systemPrompt.Substring(0, Math.Min(150, systemPrompt.Length))}...\n");
         Console.ResetColor();
 
         switch (agentType)
         {
-            case AgentType.GeneralAssistant:
-                await RunGeneralAssistantAsync(systemPrompt);
+            case AgentType.Step1_BasicChat:
+                await RunBasicChatAsync(systemPrompt);
+                break;
+            case AgentType.Step2_ChatWithTools:
+                await RunChatWithToolsAsync(systemPrompt);
+                break;
+            case AgentType.Step3_ToolsDemo:
+                await RunToolsDemoAsync();
                 break;
             case AgentType.DocumentSearch:
             case AgentType.DocumentSearchSimple:
@@ -275,8 +417,34 @@ internal class AgentNavigator : IDisposable
         }
     }
 
-    private async Task RunGeneralAssistantAsync(string systemPrompt)
+    private async Task RunBasicChatAsync(string systemPrompt)
     {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("Starting basic chat... (type empty line to exit)\n");
+        Console.ResetColor();
+
+        // No tools - pure chat
+        var clientBuilder = new ChatClientBuilder(_client)
+            .Build();
+
+        List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
+
+        var chatOptions = new ChatOptions
+        {
+            Temperature = 0.2f,
+            MaxOutputTokens = 1000
+        };
+
+        await RunChatLoopAsync(clientBuilder, history, chatOptions);
+    }
+
+    private async Task RunChatWithToolsAsync(string systemPrompt)
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("Starting chat with CurrentTime tool... (type empty line to exit)");
+        Console.WriteLine("Try asking: \"What time is it?\" or \"What's the current date?\"\n");
+        Console.ResetColor();
+
         var clientBuilder = new ChatClientBuilder(_client)
             .UseFunctionInvocation()
             .Build();
@@ -293,6 +461,18 @@ internal class AgentNavigator : IDisposable
         };
 
         await RunChatLoopAsync(clientBuilder, history, chatOptions);
+    }
+
+    private async Task RunToolsDemoAsync()
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("Starting FOOTMONSTER socks shopping demo... (type empty line to exit)");
+        Console.WriteLine("The assistant will try to sell you socks. Try buying some!\n");
+        Console.ResetColor();
+
+        // Use the BasicToolsExamples shopping cart demo
+        using var tools = new BasicToolsExamples(_ollamaUri, _chatModel);
+        await tools.ShoppingCartMethods();
     }
 
     private async Task RunDocumentSearchAsync(string systemPrompt)

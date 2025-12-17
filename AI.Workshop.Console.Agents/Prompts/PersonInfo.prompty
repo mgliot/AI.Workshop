@@ -23,9 +23,8 @@ Return this exact structure:
 }
 
 CRITICAL RULES:
-- Determine the person’s best-known age (or rounded integer estimate) from canonical information or widely accepted timelines; output an integer (e.g., 33)
-- Only return null for age if absolutely no credible source or reasonable estimate exists
-- Age must be a number only (never strings or text qualifiers)
+- Use null if a value is unknown
+- Age must be a number only (e.g., 33, not "33 (estimated)")
 - Do not add comments or explanations inside the JSON
 - Do not wrap the JSON in markdown code blocks
 - Return only the JSON object, nothing else

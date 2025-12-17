@@ -1,19 +1,24 @@
+using AI.Workshop.Common;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
 using System.ComponentModel;
 
 namespace AI.Workshop.ConsoleApps.AgentChat;
 
-internal class BasicToolsExamples
+internal class BasicToolsExamples : IDisposable
 {
-    protected readonly IChatClient _client;
+    private readonly OllamaApiClient _ollamaClient;
+    private readonly IChatClient _client;
+    private bool _disposed;
 
-    public BasicToolsExamples()
+    public BasicToolsExamples(string ollamaUri, string chatModel)
     {
-        var ollamaUri = new Uri("http://localhost:11434/");
-        var ollamaModel = "llama3.2";
+        _ollamaClient = new OllamaApiClient(new Uri(ollamaUri), chatModel);
+        _client = _ollamaClient;
+    }
 
-        _client = new OllamaApiClient(ollamaUri, ollamaModel);
+    public BasicToolsExamples() : this(AIConstants.DefaultOllamaUri, AIConstants.DefaultChatModel)
+    {
     }
 
     internal async Task ItemPriceMethod()
@@ -72,6 +77,15 @@ internal class BasicToolsExamples
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("\nYou: ");
             var input = Console.ReadLine()!;
+
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Exiting demo.");
+                Console.ResetColor();
+                break;
+            }
+
             messages.Add(new(ChatRole.User, input));
 
             // Get reply
@@ -80,5 +94,12 @@ internal class BasicToolsExamples
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"Bot: {response.Text}");
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _ollamaClient.Dispose();
+        _disposed = true;
     }
 }

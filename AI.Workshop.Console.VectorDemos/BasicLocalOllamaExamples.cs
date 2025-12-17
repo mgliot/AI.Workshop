@@ -77,7 +77,25 @@ internal class BasicLocalOllamaExamples : IDisposable
         var inMemoryStore = new InMemoryStore(_embeddingGenerator);
         await inMemoryStore.IngestDataAsync();
 
-        await foreach (var result in inMemoryStore.SearchAsync("Which service should I use to store my documents?"));
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine("Searching for: \"Which service should I use to store my documents?\"\n");
+
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("Results:");
+        Console.ResetColor();
+
+        var resultCount = 0;
+        await foreach (var result in inMemoryStore.SearchAsync("Which service should I use to store my documents?", numberOfResults: 3))
+        {
+            resultCount++;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"\n  [{resultCount}] {result.Record.Name}");
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.WriteLine($"      {result.Record.Description}");
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($"      Score: {result.Score:F4}");
+        }
+        Console.ResetColor();
     }
 
     internal async Task BasicRagWithLocalStoreSearchAsync()
@@ -99,7 +117,8 @@ internal class BasicLocalOllamaExamples : IDisposable
 
         var chatOptions = new ChatOptions
         {
-            Tools = [AIFunctionFactory.Create(inMemoryStore.SearchToolAsync)]
+            Tools = [AIFunctionFactory.Create(inMemoryStore.SearchToolAsync)],
+            ToolMode = ChatToolMode.RequireAny
         };
 
         while (true)

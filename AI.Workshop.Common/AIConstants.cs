@@ -24,4 +24,19 @@ public static class AIConstants
     /// Vector dimensions for all-minilm embedding model
     /// </summary>
     public const int VectorDimensions = 384;
+
+    /// <summary>
+    /// Default Qdrant host
+    /// </summary>
+    public const string DefaultQdrantHost = "localhost";
+
+    /// <summary>
+    /// Default Qdrant gRPC port (not HTTP port 6333)
+    /// </summary>
+    public const int DefaultQdrantGrpcPort = 6334;
+
+    /// <summary>
+    /// Default Qdrant API key (empty = no authentication)
+    /// </summary>
+    public const string DefaultQdrantApiKey = "";
 }
