@@ -6,18 +6,12 @@ namespace AI.Workshop.MCP.ConsoleClient;
 internal class WorkshopMcpService : IAsyncDisposable
 {
     private readonly StdioClientTransport _transport;
-    private static McpClient? _mcpClient;
+    private McpClient? _mcpClient;
 
-    public WorkshopMcpService()
+    public WorkshopMcpService(AppSettings settings)
     {
-        if (_mcpClient != null)
-        {
-            _transport = null!;
-            return;
-        }
-
-        var serverDir = Path.GetFullPath(AppContext.BaseDirectory.Replace("ConsoleClient", "ConsoleServer"));
-        var serverDll = Path.Combine(serverDir, "AI.Workshop.MCP.ConsoleServer.dll");
+        var serverDir = Path.GetFullPath(AppContext.BaseDirectory.Replace("AI.Workshop.MCP.ConsoleClient", settings.McpServer.ServerProject));
+        var serverDll = Path.Combine(serverDir, settings.McpServer.ServerDll);
 
         _transport = new StdioClientTransport(new StdioClientTransportOptions
         {

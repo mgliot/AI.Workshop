@@ -9,12 +9,14 @@ internal class OllamaIntegrationExamples : IDisposable
 {
     private readonly OllamaApiClient _ollamaClient;
     private readonly IChatClient _chatClient;
+    private readonly AppSettings _settings;
     private bool _disposed;
 
-    public OllamaIntegrationExamples()
+    public OllamaIntegrationExamples(AppSettings settings)
     {
-        var ollamaUri = new Uri(AIConstants.DefaultOllamaUri);
-        var ollamaModel = AIConstants.DefaultChatModel;
+        _settings = settings;
+        var ollamaUri = new Uri(settings.Ollama.Uri);
+        var ollamaModel = settings.Ollama.ChatModel;
 
         _ollamaClient = new OllamaApiClient(ollamaUri, ollamaModel);
         _chatClient = _ollamaClient;
@@ -30,7 +32,7 @@ internal class OllamaIntegrationExamples : IDisposable
 
         List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
 
-        await using var workshopMcp = new WorkshopMcpService();
+        await using var workshopMcp = new WorkshopMcpService(_settings);
         var mcpTools = await workshopMcp.GetToolsAsync();
 
         var chatOptions = new ChatOptions
@@ -44,63 +46,6 @@ internal class OllamaIntegrationExamples : IDisposable
 
         while (true)
         {
-            // Get input
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.Write("\nQ: ");
-            var input = Console.ReadLine()!;
-
-            if (string.IsNullOrWhiteSpace(input))
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Exiting chat.");
-                Console.ResetColor();
-                break;
-            }
-
-            history.Add(new(ChatRole.User, input));
-
-            var streamingResponse = clientBuilder.GetStreamingResponseAsync(history, chatOptions);
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write("A: ");
-            var messageBuilder = new StringBuilder();
-
-            await foreach (var chunk in streamingResponse)
-            {
-                Console.Write(chunk.Text);
-                messageBuilder.Append(chunk.Text);
-            }
-
-            history.Add(new(ChatRole.Assistant, messageBuilder.ToString()));
-            Console.ResetColor();
-        }
-    }
-
-    internal async Task RagWithToolsFromGitHubServerAsync()
-    {
-        var clientBuilder = new ChatClientBuilder(_chatClient)
-            .UseFunctionInvocation()
-            .Build();
-
-        var systemPrompt = PromptyHelper.GetSystemPrompt("GitHubAssistant");
-
-        List<ChatMessage> history = [new(ChatRole.System, systemPrompt)];
-
-        await using var gitHubMcp = new GitHubMcpService();
-        var gitHubTools = await gitHubMcp.GetToolsAsync();
-
-        var chatOptions = new ChatOptions
-        {
-            Tools = [.. gitHubTools ]
-        };
-
-        Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine(systemPrompt);
-        Console.ResetColor();
-
-        while (true)
-        {
-            // Get input
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("\nQ: ");
             var input = Console.ReadLine()!;

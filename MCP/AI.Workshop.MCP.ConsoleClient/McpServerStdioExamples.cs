@@ -8,12 +8,18 @@ namespace AI.Workshop.MCP.ConsoleClient;
 /// https://devblogs.microsoft.com/dotnet/build-a-model-context-protocol-mcp-server-in-csharp/
 /// https://github.com/jamesmontemagno/MonkeyMCP
 /// </summary>
-internal class McpServerStdioExamples
+internal class McpServerStdioExamples : IAsyncDisposable
 {
+    private readonly WorkshopMcpService _workshopMcpService;
+
+    public McpServerStdioExamples(AppSettings settings)
+    {
+        _workshopMcpService = new WorkshopMcpService(settings);
+    }
+
     internal async Task EnlistServerInfoAsync()
     {
-        await using var sampleClient = new WorkshopMcpService();
-        var client = await sampleClient.GetClientAsync();
+        var client = await _workshopMcpService.GetClientAsync();
 
         await client.PingAsync();
 
@@ -54,8 +60,7 @@ internal class McpServerStdioExamples
 
     internal async Task CallMcpServerToolsAsync()
     {
-        await using var sampleClient = new WorkshopMcpService();
-        var client = await sampleClient.GetClientAsync();
+        var client = await _workshopMcpService.GetClientAsync();
 
         var result = await client.CallToolAsync("echo", new Dictionary<string, object?>() { ["message"] = "Hello MCP!" });
 
@@ -68,13 +73,17 @@ internal class McpServerStdioExamples
 
     internal async Task CallMonkeyToolsAsync()
     {
-        await using var sampleClient = new WorkshopMcpService();
-        var client = await sampleClient.GetClientAsync();
+        var client = await _workshopMcpService.GetClientAsync();
 
         var result = await client.CallToolAsync("get_monkeys", new Dictionary<string, object?>());
         Console.WriteLine($"Result: {result.Content.First().ToAIContent()}");
 
         result = await client.CallToolAsync("get_monkey", new Dictionary<string, object?>() { ["name"] = "Baboon" });
         Console.WriteLine($"Result: {result.Content.First().ToAIContent()}");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _workshopMcpService.DisposeAsync();
     }
 }

@@ -15,14 +15,9 @@ graph TB
         subgraph "Clients"
             CC[ConsoleClient]
         end
-        
-        subgraph "External Servers"
-            GH[GitHub MCP Server]
-        end
     end
     
-    CC --> CS
-    CC --> GH
+    CC -->|"auto-starts"| CS
     CS --> OLL[Ollama]
     HS --> OLL
 ```
@@ -72,99 +67,99 @@ graph TB
     end
     
     subgraph "Tools"
-        MT[MonkeyTool]
-        WT[WeatherTool]
+        ET[EchoTool]
+        MT[MonkeyTools]
     end
     
     subgraph "Resources"
-        CFG[ConfigResource]
-        HELP[HelpResource]
+        RG[ResourceGenerator]
+        SR[SimpleResourceType]
     end
     
-    subgraph "External"
+    subgraph "Services"
+        MS[MonkeyService]
         API[Monkey API]
     end
     
     MAIN --> SVR --> TRANS
-    SVR --> MT & WT
-    SVR --> CFG & HELP
-    MT --> API
+    SVR --> ET & MT
+    SVR --> RG & SR
+    MT --> MS --> API
 ```
 
 ### Tool Definitions
 
 ```mermaid
 classDiagram
-    class MonkeyTool {
-        +Name: get_random_monkey
-        +Description: Gets a random monkey
-        +InvokeAsync(): MonkeyInfo
+    class EchoTool {
+        +Echo(message): string
+        +ReverseEcho(message): string
     }
     
-    class WeatherTool {
-        +Name: get_weather
-        +Description: Gets weather for a city
-        +Parameters: city (string)
-        +InvokeAsync(city): WeatherInfo
+    class MonkeyTools {
+        +GetMonkeys(): string
+        +GetMonkey(name): string
     }
     
-    class MonkeyInfo {
-        +Name: string
-        +Species: string
-        +Habitat: string
-        +FunFact: string
+    class MonkeyService {
+        +GetMonkeysAsync(): List~Monkey~
+        +GetMonkeyAsync(name): Monkey
     }
+    
+    MonkeyTools --> MonkeyService
 ```
 
 ### Project Structure
 
 ```
 MCP/AI.Workshop.MCP.ConsoleServer/
-├── Program.cs              # Server entry point
+├── Program.cs              # Server entry point with MCP configuration
+├── MonkeyService.cs        # Service for monkey data
 ├── Tools/
-│   ├── MonkeyTool.cs
-│   └── WeatherTool.cs
-├── Resources/
-│   ├── ConfigResource.cs
-│   └── HelpResource.cs
-└── appsettings.json
+│   ├── EchoTool.cs         # Echo and reverse echo tools
+│   └── MonkeyTools.cs      # Monkey query tools
+└── Resources/
+    ├── ResourceGenerator.cs
+    └── SimpleResourceType.cs
 ```
 
 ---
 
 ## AI.Workshop.MCP.ConsoleClient
 
-MCP client that connects to local and external MCP servers.
+MCP client with interactive demo menu that auto-starts the MCP server.
 
 ### Architecture
 
 ```mermaid
 graph TB
     subgraph "ConsoleClient"
-        MAIN[Program.cs]
-        CLI[McpClient]
-        NAV[ServerNavigator]
+        MAIN[Program.cs<br/>Interactive Menu]
+        CFG[AppSettings]
+        DEMO[Demo Examples]
     end
     
-    subgraph "Connected Servers"
-        LOCAL[Local ConsoleServer]
-        GITHUB[GitHub MCP Server]
+    subgraph "Services"
+        WS[WorkshopMcpService]
+        STDIO[StdioClientTransport]
     end
     
-    subgraph "AI Integration"
-        CC[IChatClient]
+    subgraph "Examples"
+        SE[McpServerStdioExamples]
+        OE[OllamaIntegrationExamples]
+    end
+    
+    subgraph "External"
+        SVR[ConsoleServer<br/>auto-started]
         OLL[Ollama]
     end
     
-    subgraph "Prompty Templates"
-        P1[MonkeyAssistant.prompty]
-        P2[GitHubAssistant.prompty]
-    end
-    
-    MAIN --> NAV --> CLI
-    CLI --> LOCAL & GITHUB
-    NAV --> CC --> OLL
-    NAV --> P1 & P2
+    MAIN --> CFG
+    MAIN --> DEMO
+    DEMO --> SE & OE
+    SE --> WS --> STDIO --> SVR
+    OE --> WS
+    OE --> OLL
 ```
 
 ### Client Flow
@@ -173,36 +168,50 @@ graph TB
 sequenceDiagram
     participant User
     participant Client
-    participant LocalServer
-    participant GitHubServer
+    participant WorkshopMcpService
+    participant ConsoleServer
     participant Ollama
     
-    User->>Client: Select server
-    Client->>LocalServer: Initialize
-    LocalServer-->>Client: Capabilities + Tools
+    User->>Client: Select demo option
+    Client->>WorkshopMcpService: Create service
+    WorkshopMcpService->>ConsoleServer: Auto-start via stdio
+    ConsoleServer-->>WorkshopMcpService: Capabilities + Tools
     
     User->>Client: "Tell me about monkeys"
-    Client->>Ollama: Process with tools
-    Ollama->>LocalServer: get_random_monkey()
-    LocalServer-->>Ollama: MonkeyInfo
+    Client->>Ollama: Process with MCP tools
+    Ollama->>ConsoleServer: get_monkeys()
+    ConsoleServer-->>Ollama: Monkey data
     Ollama-->>Client: Response with monkey facts
     Client-->>User: Display response
-    
-    User->>Client: Switch to GitHub
-    Client->>GitHubServer: Initialize
-    GitHubServer-->>Client: GitHub tools available
 ```
 
 ### Project Structure
 
 ```
 MCP/AI.Workshop.MCP.ConsoleClient/
-├── Program.cs              # Client entry point
-├── ServerNavigator.cs      # Server selection UI
-├── Prompts/
-│   ├── MonkeyAssistant.prompty
-│   └── GitHubAssistant.prompty
-└── appsettings.json
+├── Program.cs                    # Interactive menu entry point
+├── AppSettings.cs                # Configuration classes
+├── appsettings.json              # Ollama and server settings
+├── WorkshopMcpService.cs         # MCP client wrapper (auto-starts server)
+├── McpServerStdioExamples.cs     # Server capability demos
+├── OllamaIntegrationExamples.cs  # RAG with MCP tools demo
+└── Prompts/
+    └── MonkeyAssistant.prompty   # System prompt for monkey assistant
+```
+
+### Configuration (appsettings.json)
+
+```json
+{
+  "Ollama": {
+    "Uri": "http://localhost:11434/",
+    "ChatModel": "llama3.2"
+  },
+  "McpServer": {
+    "ServerProject": "AI.Workshop.MCP.ConsoleServer",
+    "ServerDll": "AI.Workshop.MCP.ConsoleServer.dll"
+  }
+}
 ```
 
 ---
@@ -218,45 +227,28 @@ graph TB
     subgraph "HttpServer"
         APP[ASP.NET Core]
         MCP[MCP Middleware]
-        SSE[Server-Sent Events]
     end
     
     subgraph "Endpoints"
-        INIT[POST /mcp/initialize]
-        TOOL[POST /mcp/tools/call]
-        LIST[GET /mcp/tools/list]
+        MAP[MapMcp]
     end
     
     subgraph "Tools"
         ECHO[EchoTool]
-        TIME[TimeTool]
     end
     
-    APP --> MCP --> SSE
-    MCP --> INIT & TOOL & LIST
-    TOOL --> ECHO & TIME
+    APP --> MCP --> MAP
+    MAP --> ECHO
 ```
-
-### HTTP Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/mcp/initialize` | POST | Initialize MCP session |
-| `/mcp/tools/list` | GET | List available tools |
-| `/mcp/tools/call` | POST | Invoke a tool |
-| `/mcp/resources/list` | GET | List resources |
-| `/mcp/resources/read` | POST | Read a resource |
 
 ### Project Structure
 
 ```
 MCP/AI.Workshop.MCP.HttpServer/
-├── Program.cs              # Minimal API entry
-├── McpEndpoints.cs         # Endpoint definitions
-├── Tools/
-│   ├── EchoTool.cs
-│   └── TimeTool.cs
-└── appsettings.json
+├── Program.cs              # Minimal API with MCP and EchoTool
+├── appsettings.json
+└── Properties/
+    └── launchSettings.json
 ```
 
 ---
@@ -266,18 +258,33 @@ MCP/AI.Workshop.MCP.HttpServer/
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | .NET | 10.0 | Runtime |
-| ModelContextProtocol | 0.4.1 | MCP SDK |
+| ModelContextProtocol | 0.4.1-preview.1 | MCP SDK |
+| OllamaSharp | 5.4.11 | Ollama client |
+| Microsoft.Extensions.AI | 10.0.1 | AI abstractions |
 | ASP.NET Core | 10.0 | HTTP server (HttpServer only) |
-| Ollama | - | LLM backend (Client) |
-| Spectre.Console | - | Interactive UI (Client) |
 
 ## Usage
 
-### Start Console Server
+### Run Console Client (Recommended)
+
+The client automatically starts the MCP server via stdio transport:
 
 ```bash
-cd MCP/AI.Workshop.MCP.ConsoleServer
+cd MCP/AI.Workshop.MCP.ConsoleClient
 dotnet run
+```
+
+**Interactive Menu:**
+```
+╔════════════════════════════════════════════════════════╗
+║           MCP Console Client - Demo Menu               ║
+╠════════════════════════════════════════════════════════╣
+║  1. List Server Info (capabilities, tools, prompts)    ║
+║  2. Call MCP Server Tools (echo, reverse_echo)         ║
+║  3. Call Monkey Tools (get_monkeys, get_monkey)        ║
+║  4. RAG with MCP Tools (requires Ollama)               ║
+║  0. Exit                                               ║
+╚════════════════════════════════════════════════════════╝
 ```
 
 ### Start HTTP Server
@@ -285,40 +292,14 @@ dotnet run
 ```bash
 cd MCP/AI.Workshop.MCP.HttpServer
 dotnet run
-# Server available at http://localhost:5000
+# Server available at http://localhost:3001
 ```
 
-### Run Client
+## Demo Descriptions
 
-```bash
-cd MCP/AI.Workshop.MCP.ConsoleClient
-dotnet run
-```
-
-**Client Menu:**
-```
-╔═══════════════════════════════════════════════════╗
-║            MCP Client - Server Selection          ║
-╠═══════════════════════════════════════════════════╣
-║  [1] Local Monkey Server (stdio)                  ║
-║  [2] GitHub MCP Server (external)                 ║
-║  [0] Exit                                         ║
-╚═══════════════════════════════════════════════════╝
-```
-
-## MCP Configuration (.mcp.json)
-
-```json
-{
-  "mcpServers": {
-    "local-monkey": {
-      "command": "dotnet",
-      "args": ["run", "--project", "MCP/AI.Workshop.MCP.ConsoleServer"]
-    },
-    "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"]
-    }
-  }
-}
-```
+| Demo | Description | Requirements |
+|------|-------------|--------------|
+| List Server Info | Shows server capabilities, tools, prompts, and resources | None |
+| Call MCP Server Tools | Invokes echo and reverse_echo tools | None |
+| Call Monkey Tools | Invokes get_monkeys and get_monkey tools | None |
+| RAG with MCP Tools | Interactive chat using Ollama with MCP tools | Ollama running locally |
