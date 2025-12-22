@@ -7,7 +7,7 @@
       "args": [
         "run",
         "--project",
-        "C:\\Projects\\AI\\AI.Workshop\\MCP\\AI.Workshop.MCP.ConsoleServer\\AI.Workshop.MCP.ConsoleServer.csproj"
+        "MCP/AI.Workshop.MCP.ConsoleServer/AI.Workshop.MCP.ConsoleServer.csproj"
       ]
     }
   }
