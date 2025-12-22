@@ -23,6 +23,12 @@ Whether you're exploring **prompt engineering**, **semantic search**, **AI agent
 
 ## 🏗️ Solution Structure
 
+### Shared Data
+
+| Folder | Purpose |
+|--------|---------|
+| **Data/** | Shared PDF documents for RAG demos (copied to project outputs at build time) |
+
 ### Console Applications
 
 | Project | Purpose | Docs |

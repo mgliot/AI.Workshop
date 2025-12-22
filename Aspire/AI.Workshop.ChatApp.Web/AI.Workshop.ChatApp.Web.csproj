@@ -30,4 +30,10 @@
     <ProjectReference Include="..\AI.Workshop.ChatApp.ServiceDefaults\AI.Workshop.ChatApp.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\..\Data\*.pdf" Link="wwwroot\Data\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
