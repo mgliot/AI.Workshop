@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Qdrant.Client" Version="13.0.2" />
+    <PackageReference Include="Aspire.Qdrant.Client" Version="13.1.0" />
     <PackageReference Include="CommunityToolkit.Aspire.OllamaSharp" Version="13.0.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Qdrant" Version="1.67.1-preview" />
     <PackageReference Include="OllamaSharp" Version="5.4.11" />
