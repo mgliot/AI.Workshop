@@ -1,6 +1,7 @@
 @using System.Runtime.CompilerServices
 @using System.Text.RegularExpressions
 @using System.Linq
+@inject IJSRuntime JS
 
 @if (Message.Role == ChatRole.User)
 {
@@ -22,7 +23,18 @@ else if (Message.Role == ChatRole.Assistant)
                         </svg>
                     </div>
                 </div>
-                <div class="assistant-message-header">Assistant</div>
+                <div class="assistant-message-header">
+                    Assistant
+                    @if (!InProgress && text.Length > 500)
+                    {
+                        <button class="download-btn" title="Descargar como Markdown" @onclick="() => DownloadMarkdown(text)">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                            .md
+                        </button>
+                    }
+                </div>
                 <div class="assistant-message-text">
                     <assistant-message markdown="@text"></assistant-message>
 
@@ -90,5 +102,14 @@ else if (Message.Role == ChatRole.Assistant)
         citations = matches.Any()
             ? matches.Select(m => (m.Groups["file"].Value, int.TryParse(m.Groups["page"].Value, out var page) ? page : (int?)null, m.Groups["quote"].Value)).ToList()
             : null;
+    }
+
+    private async Task DownloadMarkdown(string content)
+    {
+        var fileName = $"guia_estudio_{DateTime.Now:yyyyMMdd_HHmmss}.md";
+        var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+        var base64 = Convert.ToBase64String(bytes);
+        
+        await JS.InvokeVoidAsync("downloadFile", fileName, "text/markdown", base64);
     }
 }

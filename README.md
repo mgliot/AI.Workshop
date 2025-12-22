@@ -65,7 +65,7 @@ Whether you're exploring **prompt engineering**, **semantic search**, **AI agent
 | Project | Purpose | Docs |
 |---------|---------|------|
 | **AI.Workshop.ChatApp.AppHost** | Aspire orchestrator (Ollama, Qdrant containers) | [📐](./docs/AI.Workshop.ChatApp.md) |
-| **AI.Workshop.ChatApp.Web** | Full-featured Blazor chat: agent selection, RAG, TOON, guardrails, token tracking, stats bar, theme toggle | [📐](./docs/AI.Workshop.ChatApp.md) |
+| **AI.Workshop.ChatApp.Web** | Full-featured Blazor chat: agent selection, RAG, TOON, guardrails, token tracking, stats bar, theme toggle, dynamic PDF listing | [📐](./docs/AI.Workshop.ChatApp.md) |
 | **AI.Workshop.ChatApp.ServiceDefaults** | Shared Aspire configuration and OpenTelemetry | [📐](./docs/AI.Workshop.ChatApp.md) |
 
 ---
@@ -102,7 +102,7 @@ Whether you're exploring **prompt engineering**, **semantic search**, **AI agent
 ## 🛠️ Tech Stack
 
 - **.NET 10 / C#**
-- **Aspire 13** for distributed app orchestration
+- **Aspire 13.1** for distributed app orchestration
 - **Ollama** (llama3.2, all-minilm) for local LLM inference
 - **Microsoft.Extensions.AI 10.0.1** for unified AI abstractions
 - **Microsoft.Agents.AI** for agent workflows
@@ -390,7 +390,7 @@ All system prompts are managed using [Prompty](https://prompty.ai/) `.prompty` f
 | Console.AgentChat | `GeneralAssistant`, `DocumentSearch`, `DocumentSearchSimple`, `PDFSummarization` |
 | Console.Agents | `AgentSmith`, `WeatherAssistant`, `PersonInfo`, `SpanishTranslator`, `StoryWriter`, `StoryEditor` |
 | WebApi.Agents | `StoryWriter`, `StoryEditor` |
-| ChatApp.Web | `DocumentSearch`, `DocumentSearchSimple`, `GeneralAssistant`, `PDFSummarization` |
+| ChatApp.Web | `DocumentSearch`, `DocumentSearchSimple`, `GeneralAssistant`, `PDFSummarization`, `StudyGuide` |
 | MCP.ConsoleClient | `MonkeyAssistant`, `GitHubAssistant` |
 
 Example `.prompty` file:
@@ -593,11 +593,20 @@ Press `[S]` in the agent menu to access settings:
 ### Aspire Blazor Chat (ChatApp.Web)
 
 Click the ⚙️ settings icon in the header to open the settings panel:
-- **Agent Selection** – Choose between DocumentSearch and PDFSummarization agents
+- **Agent Selection** – Choose between DocumentSearch, PDFSummarization, and StudyGuide agents
 - Toggle **Guardrails** for content safety validation
 - Toggle **TOON** for token-efficient data formatting
 - **Token stats** are always displayed (no toggle needed)
 - View **session token summary** with reset button
+- **Dynamic PDF listing** – Available PDF files from the configured Data folder are automatically displayed on the chat start page
+
+**Available Agents:**
+
+| Agent | Description | Tools | Use Case |
+|-------|-------------|-------|----------|
+| **DocumentSearch** | Search documents with detailed citations | SearchDocuments | Quick lookups, specific questions |
+| **PDFSummarization** | Summarize PDF documents chapter by chapter | SearchDocuments, ListDocuments | Quick overviews, topic summaries |
+| **StudyGuide** | Generate exhaustive study guides from complete PDF content | SearchDocuments, ListDocuments, GetDocumentContent | Exam preparation, comprehensive analysis |
 
 Active features are shown as badges: 📊 (Stats) 🛡️ (Guardrails) 📝 (TOON)
 
@@ -649,6 +658,7 @@ AI settings can be configured via `appsettings.json` using the `AI` section:
     "ChatModel": "llama3.2",
     "EmbeddingModel": "all-minilm",
     "VectorDimensions": 384,
+    "DataPath": "Data",
     "QdrantHost": "localhost",
     "QdrantGrpcPort": 6334,
     "QdrantApiKey": "",
@@ -699,6 +709,7 @@ builder.Services.AddOllamaServices(settings =>
 | `ChatModel` | `llama3.2` | Model for chat completions |
 | `EmbeddingModel` | `all-minilm` | Model for embeddings |
 | `VectorDimensions` | `384` | Embedding vector dimensions |
+| `DataPath` | `Data` | Path to PDF documents (relative or absolute) |
 | `QdrantHost` | `localhost` | Qdrant vector database host |
 | `QdrantGrpcPort` | `6334` | Qdrant gRPC port (not HTTP 6333) |
 | `QdrantApiKey` | `""` | Qdrant API key (empty = no auth) |
@@ -823,6 +834,13 @@ GPU_VENDOR=cpu dotnet run --project Aspire/AI.Workshop.ChatApp.AppHost
 
 ### Qdrant (for Aspire)
 Automatically provisioned by Aspire AppHost with persistent data volume.
+
+**Accessing Qdrant Dashboard:**
+1. Open the Aspire Dashboard (typically `http://localhost:15888`)
+2. Click on the `vector-db` resource
+3. Expand the **Environment Variables** section
+4. Find `QDRANT__SERVICE__API_KEY` - this is your API key
+5. Open Qdrant Dashboard at `http://localhost:6333/dashboard` and enter the key
 
 ### Vector Store Selection
 In `AI.Workshop.ChatApp.Web`, set `VECTOR_STORE` to either `Qdrant` or `Sqlite`.

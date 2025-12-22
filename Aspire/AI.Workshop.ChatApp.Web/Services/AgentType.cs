@@ -6,7 +6,8 @@ namespace AI.Workshop.ChatApp.Web.Services;
 public enum AgentType
 {
     DocumentSearch,
-    PDFSummarization
+    PDFSummarization,
+    StudyGuide
 }
 
 /// <summary>
@@ -17,7 +18,8 @@ public static class AgentMetadata
     public static readonly Dictionary<AgentType, AgentInfo> Agents = new()
     {
         { AgentType.DocumentSearch, new("Document Search", "Search documents with detailed citations", "search") },
-        { AgentType.PDFSummarization, new("PDF Summarization", "Summarize PDF documents chapter by chapter", "document") }
+        { AgentType.PDFSummarization, new("PDF Summarization", "Summarize PDF documents chapter by chapter", "document") },
+        { AgentType.StudyGuide, new("Study Guide", "Generate exhaustive study guides from complete PDF content", "book") }
     };
 }
 

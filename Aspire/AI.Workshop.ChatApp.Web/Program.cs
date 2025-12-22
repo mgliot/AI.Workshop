@@ -4,6 +4,7 @@ using AI.Workshop.Common;
 using AI.Workshop.Guardrails;
 using AI.Workshop.VectorStore.Ingestion;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.VectorData;
 using QdrantBased = AI.Workshop.VectorStore.Ingestion.Qdrant;
 
@@ -45,11 +46,8 @@ if (vectorStoreSection == "Qdrant")
 
     builder.Services.AddScoped<QdrantBased.DataIngestor>();
     builder.Services.AddSingleton<QdrantBased.SemanticSearch>();
-    builder.Services.AddScoped<RagService>(sp => new RagService(
-        sp.GetRequiredService<QdrantBased.SemanticSearch>(),
-        sp.GetRequiredService<IWebHostEnvironment>(),
-        sp.GetRequiredService<ChatSettingsService>(),
-        sp.GetRequiredService<ILogger<RagService>>()));
+    builder.Services.AddScoped<RagService>();
+    builder.Services.AddScoped<StudyGuideOrchestrator>();
 }
 else if (vectorStoreSection == "Sqlite")
 {
@@ -61,11 +59,8 @@ else if (vectorStoreSection == "Sqlite")
 
     builder.Services.AddScoped<DataIngestor>();
     builder.Services.AddSingleton<SemanticSearch>();
-    builder.Services.AddScoped<RagService>(sp => new RagService(
-        sp.GetRequiredService<SemanticSearch>(),
-        sp.GetRequiredService<IWebHostEnvironment>(),
-        sp.GetRequiredService<ChatSettingsService>(),
-        sp.GetRequiredService<ILogger<RagService>>()));
+    builder.Services.AddScoped<RagService>();
+    builder.Services.AddScoped<StudyGuideOrchestrator>();
 }
 else
 {
@@ -91,25 +86,20 @@ app.UseStaticFiles();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+// Ingest PDF documents from configured data path
 using var scope = app.Services.CreateScope();
+var aiSettings = scope.ServiceProvider.GetRequiredService<IOptions<AISettings>>().Value;
+var dataPath = aiSettings.GetResolvedDataPath(AppContext.BaseDirectory);
 
 if (vectorStoreSection == "Qdrant")
 {
     var ingestor = scope.ServiceProvider.GetRequiredService<QdrantBased.DataIngestor>();
-
-    await ingestor.IngestDataAsync(
-        new QdrantBased.PDFDirectorySource(Path.Combine(builder.Environment.WebRootPath, "Data")));
+    await ingestor.IngestDataAsync(new QdrantBased.PDFDirectorySource(dataPath));
 }
 else if (vectorStoreSection == "Sqlite")
 {
     var ingestor = scope.ServiceProvider.GetRequiredService<DataIngestor>();
-
-    await ingestor.IngestDataAsync(
-        new PDFDirectorySource(Path.Combine(builder.Environment.WebRootPath, "Data")));
-}
-else
-{
-    throw new InvalidOperationException("Please set the VECTOR_STORE configuration to either 'Qdrant' or 'Sqlite'.");
+    await ingestor.IngestDataAsync(new PDFDirectorySource(dataPath));
 }
 
 app.Run();

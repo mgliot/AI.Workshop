@@ -3,6 +3,23 @@ import * as marked from './lib/marked/dist/marked.esm.js';
 
 const purify = DOMPurify(window);
 
+// Configure DOMPurify to allow links
+purify.setConfig({
+    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'ul', 'ol', 'li', 'strong', 'em', 'code', 'pre', 'blockquote', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'br', 'hr', 'div', 'span'],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'id'],
+    ALLOW_DATA_ATTR: false
+});
+
+// Download file helper function
+window.downloadFile = function(fileName, contentType, base64Content) {
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = `data:${contentType};base64,${base64Content}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 customElements.define('assistant-message', class extends HTMLElement {
     static observedAttributes = ['markdown'];
 
@@ -10,7 +27,7 @@ customElements.define('assistant-message', class extends HTMLElement {
         if (name === 'markdown') {
             newValue = newValue.replace(/<citation.*?<\/citation>/gs, '');
             const elements = marked.parse(newValue.replace(/</g, '&lt;'));
-            this.innerHTML = purify.sanitize(elements, { KEEP_CONTENT: false });
+            this.innerHTML = purify.sanitize(elements);
 
             // Within text nodes, unescape the &lt; entities otherwise it will be displayed
             // to the user as escaped if the element uses preformatted styling. This is safe

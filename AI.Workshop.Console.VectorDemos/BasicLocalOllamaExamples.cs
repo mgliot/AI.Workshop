@@ -14,15 +14,15 @@ internal class BasicLocalOllamaExamples : IDisposable
     private readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
     private bool _disposed;
 
-    public BasicLocalOllamaExamples(string ollamaUri, string chatModel, string embeddingModel)
+    public BasicLocalOllamaExamples(AISettings aiSettings)
     {
-        var uri = new Uri(ollamaUri);
+        var uri = aiSettings.GetOllamaUri();
 
-        _chatClient = new OllamaApiClient(uri, chatModel);
+        _chatClient = new OllamaApiClient(uri, aiSettings.ChatModel);
         _chatClientInterface = _chatClient;
 
         // OllamaApiClient implements IEmbeddingGenerator
-        _embeddingClient = new OllamaApiClient(uri, embeddingModel);
+        _embeddingClient = new OllamaApiClient(uri, aiSettings.EmbeddingModel);
         _embeddingGenerator = _embeddingClient;
     }
 

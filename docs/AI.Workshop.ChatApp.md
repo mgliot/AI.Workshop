@@ -178,16 +178,33 @@ graph LR
     subgraph "Agents"
         DS[DocumentSearch<br/>Search & Answer]
         PS[PDFSummarization<br/>Summarize Documents]
+        SG[StudyGuide<br/>Exhaustive Analysis]
     end
     
     subgraph "Prompty Files"
         P1[DocumentSearch.prompty]
         P2[PDFSummarization.prompty]
+        P3[StudyGuide.prompty]
     end
     
-    DS --> P1
-    PS --> P2
+    subgraph "Tools"
+        T1[SearchDocuments]
+        T2[ListDocuments]
+        T3[GetDocumentContent]
+    end
+    
+    DS --> P1 --> T1
+    PS --> P2 --> T1 & T2
+    SG --> P3 --> T1 & T2 & T3
 ```
+
+**Agent Comparison:**
+
+| Agent | Purpose | Tools | Best For |
+|-------|---------|-------|----------|
+| **DocumentSearch** | Quick lookups with citations | SearchDocuments | Specific questions, fact-checking |
+| **PDFSummarization** | Chapter-by-chapter summaries | SearchDocuments, ListDocuments | Quick overviews, topic exploration |
+| **StudyGuide** | Exhaustive study guides | All tools + GetDocumentContent | Exam prep, comprehensive learning |
 
 ### Stats Bar
 
@@ -257,7 +274,8 @@ Aspire/
 │   │   ├── DocumentSearch.prompty
 │   │   ├── DocumentSearchSimple.prompty
 │   │   ├── GeneralAssistant.prompty
-│   │   └── PDFSummarization.prompty
+│   │   ├── PDFSummarization.prompty
+│   │   └── StudyGuide.prompty
 │   └── wwwroot/
 │       └── Data/               # PDF documents
 │
@@ -287,7 +305,7 @@ graph TB
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | .NET | 10.0 | Runtime |
-| Aspire | 13 | Orchestration |
+| Aspire | 13.1 | Orchestration |
 | Blazor Server | 10.0 | Web UI |
 | Ollama | - | LLM + Embeddings |
 | Qdrant | - | Vector database |

@@ -18,25 +18,12 @@ public enum VectorDemoType
 /// </summary>
 internal class DemoNavigator : IDisposable
 {
-    private readonly string _ollamaUri;
-    private readonly string _chatModel;
-    private readonly string _embeddingModel;
-    private readonly string _qdrantHost;
-    private readonly int _qdrantGrpcPort;
-    private readonly string _qdrantApiKey;
+    private readonly AISettings _aiSettings;
     private bool _disposed;
 
-    public DemoNavigator(string ollamaUri, string chatModel, string embeddingModel,
-        string qdrantHost = AIConstants.DefaultQdrantHost, 
-        int qdrantGrpcPort = AIConstants.DefaultQdrantGrpcPort,
-        string qdrantApiKey = "")
+    public DemoNavigator(AISettings aiSettings)
     {
-        _ollamaUri = ollamaUri;
-        _chatModel = chatModel;
-        _embeddingModel = embeddingModel;
-        _qdrantHost = qdrantHost;
-        _qdrantGrpcPort = qdrantGrpcPort;
-        _qdrantApiKey = qdrantApiKey;
+        _aiSettings = aiSettings;
     }
 
     private static readonly Dictionary<VectorDemoType, (string Title, string Description, string[] LearningPoints)> DemoInfo = new()
@@ -188,7 +175,7 @@ internal class DemoNavigator : IDisposable
         }
 
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine($"\n  Using: {_chatModel} (chat) | {_embeddingModel} (embeddings)");
+        Console.WriteLine($"\n  Using: {_aiSettings.ChatModel} (chat) | {_aiSettings.EmbeddingModel} (embeddings)");
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine($"═══════════════════════════════════════════════════════════════════════════\n");
         Console.ResetColor();
@@ -213,7 +200,7 @@ internal class DemoNavigator : IDisposable
         Console.WriteLine("Initializing in-memory vector store with sample data...\n");
         Console.ResetColor();
 
-        using var examples = new BasicLocalOllamaExamples(_ollamaUri, _chatModel, _embeddingModel);
+        using var examples = new BasicLocalOllamaExamples(_aiSettings);
         await examples.BasicLocalStoreSearchAsync();
 
         Console.ForegroundColor = ConsoleColor.Green;
@@ -228,19 +215,19 @@ internal class DemoNavigator : IDisposable
         Console.WriteLine("Documents will be loaded from the Data folder.\n");
         Console.ResetColor();
 
-        using var search = new SqlLiteDocumentSearch(_ollamaUri, _chatModel, _embeddingModel);
+        using var search = new SqlLiteDocumentSearch(_aiSettings);
         await search.BasicDocumentSearchAsync();
     }
 
     private async Task RunQdrantDocumentSearchAsync()
     {
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine($"Checking Qdrant connection at {_qdrantHost}:{_qdrantGrpcPort} (gRPC)...\n");
+        Console.WriteLine($"Checking Qdrant connection at {_aiSettings.QdrantHost}:{_aiSettings.QdrantGrpcPort} (gRPC)...\n");
         Console.ResetColor();
 
         try
         {
-            using var search = new QdrantDocumentSearch(_ollamaUri, _chatModel, _embeddingModel, _qdrantHost, _qdrantGrpcPort, _qdrantApiKey);
+            using var search = new QdrantDocumentSearch(_aiSettings);
 
             Console.ForegroundColor = ConsoleColor.Gray;
             Console.WriteLine("Testing Qdrant connection...");

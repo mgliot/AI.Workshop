@@ -67,6 +67,11 @@ public class AISettings
     public string GitHubBranch { get; set; } = AIConstants.DefaultGitHubBranch;
 
     /// <summary>
+    /// Path to data files (PDFs, documents). Can be absolute or relative to application root.
+    /// </summary>
+    public string DataPath { get; set; } = AIConstants.DefaultDataPath;
+
+    /// <summary>
     /// Gets the Ollama URI as a Uri object
     /// </summary>
     public Uri GetOllamaUri() => new(OllamaUri);
@@ -85,5 +90,17 @@ public class AISettings
             return string.Empty;
 
         return $"https://github.com/{GitHubOwner}/{GitHubRepo}/blob/{GitHubBranch}/{Uri.EscapeDataString(filePath)}";
+    }
+
+    /// <summary>
+    /// Gets the resolved data path. If DataPath is relative, resolves it against the provided base path.
+    /// </summary>
+    /// <param name="basePath">Base path to resolve relative paths against (typically ContentRootPath)</param>
+    public string GetResolvedDataPath(string basePath)
+    {
+        if (Path.IsPathRooted(DataPath))
+            return DataPath;
+
+        return Path.Combine(basePath, DataPath);
     }
 }

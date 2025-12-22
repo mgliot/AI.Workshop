@@ -37,8 +37,7 @@ internal class AgentNavigator : IDisposable
     private readonly OllamaApiClient _embeddingClient;
     private readonly IChatClient _client;
     private readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
-    private readonly string _ollamaUri;
-    private readonly string _chatModel;
+    private readonly AISettings _aiSettings;
     private readonly ChatSettings _settings = new();
     private readonly GuardrailsService _guardrails;
     private readonly TokenUsageTracker _tokenTracker = new();
@@ -127,18 +126,17 @@ internal class AgentNavigator : IDisposable
         }
     };
 
-    public AgentNavigator(string ollamaUri, string chatModel, string embeddingModel)
+    public AgentNavigator(AISettings aiSettings)
     {
-        _ollamaUri = ollamaUri;
-        _chatModel = chatModel;
+        _aiSettings = aiSettings;
         
-        var uri = new Uri(ollamaUri);
+        var uri = aiSettings.GetOllamaUri();
 
-        _chatClient = new OllamaApiClient(uri, chatModel);
+        _chatClient = new OllamaApiClient(uri, aiSettings.ChatModel);
         _client = _chatClient;
 
         // OllamaApiClient implements IEmbeddingGenerator - create a separate client for embeddings
-        _embeddingClient = new OllamaApiClient(uri, embeddingModel);
+        _embeddingClient = new OllamaApiClient(uri, aiSettings.EmbeddingModel);
         _embeddingGenerator = _embeddingClient;
 
         // Initialize guardrails with default options
@@ -154,7 +152,7 @@ internal class AgentNavigator : IDisposable
     /// <summary>
     /// Creates an AgentNavigator with default configuration from AIConstants
     /// </summary>
-    public AgentNavigator() : this(AIConstants.DefaultOllamaUri, AIConstants.DefaultChatModel, AIConstants.DefaultEmbeddingModel)
+    public AgentNavigator() : this(new AISettings())
     {
     }
 
@@ -471,7 +469,7 @@ internal class AgentNavigator : IDisposable
         Console.ResetColor();
 
         // Use the BasicToolsExamples shopping cart demo
-        using var tools = new BasicToolsExamples(_ollamaUri, _chatModel);
+        using var tools = new BasicToolsExamples(_aiSettings.OllamaUri, _aiSettings.ChatModel);
         await tools.ShoppingCartMethods();
     }
 
@@ -652,7 +650,7 @@ internal class AgentNavigator : IDisposable
         VectorStoreCollection<string, IngestedDocument> documents = store.GetCollection<string, IngestedDocument>("documents");
 
         var dataIngestor = new DataIngestor(_embeddingGenerator, chunks, documents);
-        await dataIngestor.IngestDataAsync(new PDFDirectorySource(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data")));
+        await dataIngestor.IngestDataAsync(new PDFDirectorySource(_aiSettings.GetResolvedDataPath(AppDomain.CurrentDomain.BaseDirectory)));
 
         _semanticSearch = new SemanticSearch(chunks);
         Console.WriteLine("Vector store ready.\n");
@@ -691,18 +689,16 @@ internal class AgentNavigator : IDisposable
     [System.ComponentModel.Description("Lists all available PDF documents that can be searched or summarized")]
     private Task<IEnumerable<string>> ListDocumentsAsync()
     {
-        var dataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
+        var dataPath = _aiSettings.GetResolvedDataPath(AppDomain.CurrentDomain.BaseDirectory);
         if (!Directory.Exists(dataPath))
-            return Task.FromResult<IEnumerable<string>>(["No documents found. Data directory does not exist."]);
+            return Task.FromResult<IEnumerable<string>>([]);
 
         var files = Directory.GetFiles(dataPath, "*.pdf")
             .Select(Path.GetFileName)
             .Where(f => f != null)
             .Cast<string>();
 
-        return Task.FromResult(files.Any() 
-            ? files 
-            : (IEnumerable<string>)["No PDF documents found in the Data directory."]);
+        return Task.FromResult<IEnumerable<string>>(files);
     }
 
     public void Dispose()

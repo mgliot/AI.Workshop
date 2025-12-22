@@ -17,48 +17,37 @@ internal class QdrantDocumentSearch : IDisposable
     private readonly OllamaApiClient _embeddingClient;
     private readonly IChatClient _chatClientInterface;
     private readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
-    private readonly string _qdrantHost;
-    private readonly int _qdrantGrpcPort;
-    private readonly string _qdrantApiKey;
+    private readonly AISettings _aiSettings;
     private SemanticSearch? _semanticSearch;
     private bool _disposed;
 
     /// <summary>
     /// Creates a new QdrantDocumentSearch instance.
     /// </summary>
-    /// <param name="ollamaUri">Ollama server URI</param>
-    /// <param name="chatModel">Chat model name</param>
-    /// <param name="embeddingModel">Embedding model name</param>
-    /// <param name="qdrantHost">Qdrant server host</param>
-    /// <param name="qdrantGrpcPort">Qdrant gRPC port (default: 6334). Must be the gRPC port, not HTTP (6333).</param>
-    /// <param name="qdrantApiKey">Qdrant API key for authentication. Leave empty for no authentication.</param>
-    public QdrantDocumentSearch(string ollamaUri, string chatModel, string embeddingModel, 
-        string qdrantHost = "localhost", int qdrantGrpcPort = 6334, string qdrantApiKey = "")
+    /// <param name="aiSettings">AI configuration settings</param>
+    public QdrantDocumentSearch(AISettings aiSettings)
     {
         // for testing the example, run the docker container with:
         // docker run -p 6333:6333 -p 6334:6334 --name qdrant-db qdrant/qdrant
 
-        var uri = new Uri(ollamaUri);
+        _aiSettings = aiSettings;
+        var uri = aiSettings.GetOllamaUri();
 
-        _chatClient = new OllamaApiClient(uri, chatModel);
+        _chatClient = new OllamaApiClient(uri, aiSettings.ChatModel);
         _chatClientInterface = _chatClient;
 
         // OllamaApiClient implements IEmbeddingGenerator
-        _embeddingClient = new OllamaApiClient(uri, embeddingModel);
+        _embeddingClient = new OllamaApiClient(uri, aiSettings.EmbeddingModel);
         _embeddingGenerator = _embeddingClient;
-
-        _qdrantHost = qdrantHost;
-        _qdrantGrpcPort = qdrantGrpcPort;
-        _qdrantApiKey = qdrantApiKey;
     }
 
     private QdrantClient CreateQdrantClient()
     {
-        if (string.IsNullOrEmpty(_qdrantApiKey))
+        if (string.IsNullOrEmpty(_aiSettings.QdrantApiKey))
         {
-            return new QdrantClient(_qdrantHost, _qdrantGrpcPort);
+            return new QdrantClient(_aiSettings.QdrantHost, _aiSettings.QdrantGrpcPort);
         }
-        return new QdrantClient(_qdrantHost, _qdrantGrpcPort, apiKey: _qdrantApiKey);
+        return new QdrantClient(_aiSettings.QdrantHost, _aiSettings.QdrantGrpcPort, apiKey: _aiSettings.QdrantApiKey);
     }
 
     internal async Task TestQdrantAsync()
@@ -145,7 +134,7 @@ internal class QdrantDocumentSearch : IDisposable
         VectorStoreCollection<Guid, IngestedDocument> documents = store.GetCollection<Guid, IngestedDocument>("documents");
 
         var dataIngestor = new DataIngestor(_embeddingGenerator, chunks, documents);
-        await dataIngestor.IngestDataAsync(new PDFDirectorySource(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data")));
+        await dataIngestor.IngestDataAsync(new PDFDirectorySource(_aiSettings.GetResolvedDataPath(AppDomain.CurrentDomain.BaseDirectory)));
 
         return dataIngestor;
     }

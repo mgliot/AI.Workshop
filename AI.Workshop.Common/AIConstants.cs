@@ -59,4 +59,9 @@ public static class AIConstants
     /// Default GitHub branch for markdown file links
     /// </summary>
     public const string DefaultGitHubBranch = "main";
+
+    /// <summary>
+    /// Default data path for PDF documents (relative to application root)
+    /// </summary>
+    public const string DefaultDataPath = "Data";
 }

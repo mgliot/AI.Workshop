@@ -11,15 +11,10 @@ var configuration = new ConfigurationBuilder()
     .Build();
 
 // Read AI settings from configuration
-var ollamaUri = configuration["AI:OllamaUri"] ?? AIConstants.DefaultOllamaUri;
-var chatModel = configuration["AI:ChatModel"] ?? AIConstants.DefaultChatModel;
-var embeddingModel = configuration["AI:EmbeddingModel"] ?? AIConstants.DefaultEmbeddingModel;
-var qdrantHost = configuration["AI:QdrantHost"] ?? AIConstants.DefaultQdrantHost;
-var qdrantGrpcPort = int.TryParse(configuration["AI:QdrantGrpcPort"], out var port) ? port : AIConstants.DefaultQdrantGrpcPort;
-var qdrantApiKey = configuration["AI:QdrantApiKey"] ?? AIConstants.DefaultQdrantApiKey;
+var aiSettings = configuration.GetAISettings();
 
 // Check Ollama availability before proceeding
-if (!await OllamaHealthCheck.EnsureOllamaAvailableAsync(ollamaUri))
+if (!await OllamaHealthCheck.EnsureOllamaAvailableAsync(aiSettings.OllamaUri))
 {
     Console.WriteLine("\nPress any key to exit...");
     Console.ReadKey();
@@ -29,5 +24,5 @@ if (!await OllamaHealthCheck.EnsureOllamaAvailableAsync(ollamaUri))
 Console.WriteLine();
 
 // Use the interactive Demo Navigator for demo selection
-var navigator = new DemoNavigator(ollamaUri, chatModel, embeddingModel, qdrantHost, qdrantGrpcPort, qdrantApiKey);
+var navigator = new DemoNavigator(aiSettings);
 await navigator.RunAsync();

@@ -15,18 +15,20 @@ internal class SqlLiteDocumentSearch : IDisposable
     private readonly OllamaApiClient _embeddingClient;
     private readonly IChatClient _chatClientInterface;
     private readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
+    private readonly AISettings _aiSettings;
     private SemanticSearch? _semanticSearch;
     private bool _disposed;
 
-    public SqlLiteDocumentSearch(string ollamaUri, string chatModel, string embeddingModel)
+    public SqlLiteDocumentSearch(AISettings aiSettings)
     {
-        var uri = new Uri(ollamaUri);
+        _aiSettings = aiSettings;
+        var uri = aiSettings.GetOllamaUri();
 
-        _chatClient = new OllamaApiClient(uri, chatModel);
+        _chatClient = new OllamaApiClient(uri, aiSettings.ChatModel);
         _chatClientInterface = _chatClient;
 
         // OllamaApiClient implements IEmbeddingGenerator
-        _embeddingClient = new OllamaApiClient(uri, embeddingModel);
+        _embeddingClient = new OllamaApiClient(uri, aiSettings.EmbeddingModel);
         _embeddingGenerator = _embeddingClient;
     }
 
@@ -50,7 +52,7 @@ internal class SqlLiteDocumentSearch : IDisposable
         Console.ResetColor();
 
         var dataIngestor = new DataIngestor(_embeddingGenerator, chunks, documents);
-        await dataIngestor.IngestDataAsync(new PDFDirectorySource(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data")));
+        await dataIngestor.IngestDataAsync(new PDFDirectorySource(_aiSettings.GetResolvedDataPath(AppDomain.CurrentDomain.BaseDirectory)));
 
         var chatOptions = new ChatOptions
         {

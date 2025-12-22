@@ -11,6 +11,7 @@
 @inject ChatSettingsService Settings
 @inject GuardrailsService Guardrails
 @inject RagService RagService
+@inject StudyGuideOrchestrator StudyGuideOrchestrator
 
 @implements IDisposable
 
@@ -40,8 +41,10 @@
             <p>To get started, ask questions about your PDF documents.</p>
             <p><strong>Current Agent:</strong> @AgentMetadata.Agents[Settings.SelectedAgent].Description</p>
         </div>
-        <ChatCitation File="Example_Emergency_Survival_Kit.pdf"/>
-        <ChatCitation File="Example_GPS_Watch.pdf"/>
+        @foreach (var file in availablePdfFiles)
+        {
+            <ChatCitation File="@file"/>
+        }
     </NoMessagesContent>
 </ChatMessageList>
 
@@ -62,6 +65,7 @@
     private string SystemPrompt = string.Empty;
     private bool settingsOpen = false;
     private AlertInfo? guardrailAlert;
+    private string? pendingDownloadMessage;
 
     private readonly ChatOptions chatOptions = new()
     {
@@ -76,6 +80,12 @@
     private ChatMessage? currentResponseMessage;
     private ChatInput? chatInput;
     private ChatSuggestions? chatSuggestions;
+    private IEnumerable<string> availablePdfFiles = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        availablePdfFiles = await RagService.ListDocumentsAsync();
+    }
 
     protected override void OnInitialized()
     {
@@ -103,14 +113,43 @@
             "SearchDocuments",
             "Searches for information in PDF documents using a phrase or keyword"));
 
-        // Add list documents tool for PDF summarization
-        if (Settings.SelectedAgent == AgentType.PDFSummarization)
+        // Add list documents tool for PDF summarization and StudyGuide
+        if (Settings.SelectedAgent == AgentType.PDFSummarization || Settings.SelectedAgent == AgentType.StudyGuide)
         {
             chatOptions.Tools.Add(AIFunctionFactory.Create(
                 RagService.ListDocumentsAsync,
                 "ListDocuments",
                 "Lists all available PDF documents that can be searched or summarized"));
         }
+
+        // Add complete study guide generation for StudyGuide agent
+        if (Settings.SelectedAgent == AgentType.StudyGuide)
+        {
+            chatOptions.Tools.Add(AIFunctionFactory.Create(
+                GenerateCompleteStudyGuideAsync,
+                "GenerateCompleteStudyGuide",
+                "Generates a COMPLETE and DETAILED study guide for a PDF document. Processes all pages automatically."));
+        }
+    }
+
+    [Description("Generates a complete study guide for a PDF document, processing all pages section by section automatically. Returns a PDF download link.")]
+    private async Task<string> GenerateCompleteStudyGuideAsync(
+        [Description("The exact filename of the PDF document")] string filename)
+    {
+        var result = await StudyGuideOrchestrator.GenerateCompleteStudyGuideAsync(filename, progress =>
+        {
+            Console.WriteLine(progress);
+        });
+        
+        Console.WriteLine($"=== STUDY GUIDE RESULT ===");
+        Console.WriteLine($"PDF File: {result.PdfFileName}");
+        Console.WriteLine($"=========================");
+        
+        // Store the full message with download link to inject after LLM response
+        pendingDownloadMessage = result.Message;
+        
+        // Return short confirmation to LLM - the full message with link will be injected separately
+        return "Guía de estudio generada exitosamente.";
     }
 
     private async Task OnAgentChanged(AgentType agent)
@@ -229,6 +268,15 @@
         // Store the final response in the conversation, and begin getting suggestions
         messages.Add(currentResponseMessage!);
         currentResponseMessage = null;
+        
+        // If a study guide was generated, add the download message
+        if (!string.IsNullOrEmpty(pendingDownloadMessage))
+        {
+            messages.Add(new ChatMessage(ChatRole.Assistant, pendingDownloadMessage));
+            pendingDownloadMessage = null;
+            StateHasChanged();
+        }
+        
         chatSuggestions?.Update(messages);
     }
 

@@ -14,4 +14,17 @@ public class SemanticSearch(
 
         return await nearest.Select(result => result.Record).ToListAsync();
     }
+
+    /// <summary>
+    /// Retrieves all chunks for a specific document, ordered by page number.
+    /// Useful for generating comprehensive summaries of entire documents.
+    /// </summary>
+    public async Task<IReadOnlyList<IngestedChunk>> GetDocumentChunksAsync(string documentId)
+    {
+        var chunks = await vectorCollection
+            .GetAsync(record => record.DocumentId == documentId, top: int.MaxValue)
+            .ToListAsync();
+
+        return chunks.OrderBy(c => c.PageNumber).ToList();
+    }
 }

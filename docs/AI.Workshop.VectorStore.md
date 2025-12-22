@@ -270,6 +270,10 @@ var filtered = await search.SearchAsync(
     filenameFilter: "manual.pdf", 
     topK: 3);
 
+// Get ALL chunks from a document (for comprehensive summaries)
+var allChunks = await search.GetDocumentChunksAsync("manual.pdf");
+// Returns chunks ordered by page number
+
 // Qdrant (different namespace)
 using QdrantBased = AI.Workshop.VectorStore.Ingestion.Qdrant;
 var qdrantSearch = new QdrantBased.SemanticSearch(qdrantStore, embeddingGenerator);
