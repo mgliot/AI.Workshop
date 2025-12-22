@@ -47,7 +47,43 @@ public class AISettings
     public string QdrantApiKey { get; set; } = AIConstants.DefaultQdrantApiKey;
 
     /// <summary>
+    /// GitHub repository owner for markdown ingestion (e.g., "microsoft")
+    /// </summary>
+    public string GitHubOwner { get; set; } = AIConstants.DefaultGitHubOwner;
+
+    /// <summary>
+    /// GitHub repository name for markdown ingestion (e.g., "semantic-kernel")
+    /// </summary>
+    public string GitHubRepo { get; set; } = AIConstants.DefaultGitHubRepo;
+
+    /// <summary>
+    /// GitHub repository path for markdown files (e.g., "docs")
+    /// </summary>
+    public string GitHubPath { get; set; } = AIConstants.DefaultGitHubPath;
+
+    /// <summary>
+    /// GitHub branch for markdown file links (e.g., "main", "master")
+    /// </summary>
+    public string GitHubBranch { get; set; } = AIConstants.DefaultGitHubBranch;
+
+    /// <summary>
     /// Gets the Ollama URI as a Uri object
     /// </summary>
     public Uri GetOllamaUri() => new(OllamaUri);
+
+    /// <summary>
+    /// Checks if GitHub markdown ingestion is configured
+    /// </summary>
+    public bool IsGitHubConfigured => !string.IsNullOrWhiteSpace(GitHubOwner) && !string.IsNullOrWhiteSpace(GitHubRepo);
+
+    /// <summary>
+    /// Gets the GitHub URL for viewing a markdown file
+    /// </summary>
+    public string GetGitHubViewerUrl(string filePath)
+    {
+        if (!IsGitHubConfigured)
+            return string.Empty;
+
+        return $"https://github.com/{GitHubOwner}/{GitHubRepo}/blob/{GitHubBranch}/{Uri.EscapeDataString(filePath)}";
+    }
 }

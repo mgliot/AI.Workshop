@@ -39,4 +39,24 @@ public static class AIConstants
     /// Default Qdrant API key (empty = no authentication)
     /// </summary>
     public const string DefaultQdrantApiKey = "";
+
+    /// <summary>
+    /// Default GitHub repository owner for markdown ingestion
+    /// </summary>
+    public const string DefaultGitHubOwner = "";
+
+    /// <summary>
+    /// Default GitHub repository name for markdown ingestion
+    /// </summary>
+    public const string DefaultGitHubRepo = "";
+
+    /// <summary>
+    /// Default GitHub repository path for markdown files
+    /// </summary>
+    public const string DefaultGitHubPath = "";
+
+    /// <summary>
+    /// Default GitHub branch for markdown file links
+    /// </summary>
+    public const string DefaultGitHubBranch = "main";
 }

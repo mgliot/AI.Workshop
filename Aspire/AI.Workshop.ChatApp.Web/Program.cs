@@ -1,5 +1,6 @@
 using AI.Workshop.ChatApp.Web.Components;
 using AI.Workshop.ChatApp.Web.Services;
+using AI.Workshop.Common;
 using AI.Workshop.Guardrails;
 using AI.Workshop.VectorStore.Ingestion;
 using Microsoft.Extensions.AI;
@@ -10,6 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+
+// Register AI settings from configuration
+builder.Services.Configure<AISettings>(builder.Configuration.GetSection(AISettings.SectionName));
 
 // Register chat settings and guardrails services
 builder.Services.AddScoped<ChatSettingsService>();

@@ -1,4 +1,8 @@
 @using System.Web
+@using AI.Workshop.Common
+@using Microsoft.Extensions.Options
+@inject IOptions<AISettings> AISettingsOptions
+
 @if (!string.IsNullOrWhiteSpace(viewerUrl))
 {
     <a href="@viewerUrl" target="_blank" class="citation">
@@ -20,23 +24,23 @@
     public int? PageNumber { get; set; }
 
     [Parameter]
-    public required string Quote { get; set; }
+    public string? Quote { get; set; }
 
     private string? viewerUrl;
 
     protected override void OnParametersSet()
     {
         viewerUrl = null;
+        var settings = AISettingsOptions.Value;
 
-        // If you ingest other types of content besides PDF files, construct a URL to an appropriate viewer here
-        if (File.EndsWith(".pdf"))
+        if (File.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
         {
             var search = Quote?.Trim('.', ',', ' ', '\n', '\r', '\t', '"', '\'');
             viewerUrl = $"lib/pdf_viewer/viewer.html?file=/Data/{HttpUtility.UrlEncode(File)}#page={PageNumber}&search={HttpUtility.UrlEncode(search)}&phrase=true";
         }
-        else if (File.EndsWith(".md"))
+        else if (File.EndsWith(".md", StringComparison.OrdinalIgnoreCase) && settings.IsGitHubConfigured)
         {
-            viewerUrl = $"https://github.com/dedalusmax/dice-and-roll2/blob/master/{HttpUtility.UrlEncode(File)}";
+            viewerUrl = settings.GetGitHubViewerUrl(File);
         }
     }
 }

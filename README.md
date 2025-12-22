@@ -651,7 +651,11 @@ AI settings can be configured via `appsettings.json` using the `AI` section:
     "VectorDimensions": 384,
     "QdrantHost": "localhost",
     "QdrantGrpcPort": 6334,
-    "QdrantApiKey": ""
+    "QdrantApiKey": "",
+    "GitHubOwner": "",
+    "GitHubRepo": "",
+    "GitHubPath": "",
+    "GitHubBranch": "main"
   }
 }
 ```
@@ -698,6 +702,10 @@ builder.Services.AddOllamaServices(settings =>
 | `QdrantHost` | `localhost` | Qdrant vector database host |
 | `QdrantGrpcPort` | `6334` | Qdrant gRPC port (not HTTP 6333) |
 | `QdrantApiKey` | `""` | Qdrant API key (empty = no auth) |
+| `GitHubOwner` | `""` | GitHub repo owner for markdown ingestion |
+| `GitHubRepo` | `""` | GitHub repo name for markdown ingestion |
+| `GitHubPath` | `""` | Path to markdown files in repo |
+| `GitHubBranch` | `main` | Branch for GitHub file links |
 
 | DI Extension | Description |
 |--------------|-------------|
@@ -706,6 +714,49 @@ builder.Services.AddOllamaServices(settings =>
 | `AddOllamaServices()` | Registers both chat and embedding clients |
 
 > **Note:** If the `AI` section is missing, defaults from `AIConstants` are used.
+
+### GitHub Markdown Ingestion
+
+The VectorStore library supports ingesting markdown files from GitHub repositories. Configure GitHub settings to enable citations that link directly to the source files on GitHub.
+
+**Configuration:**
+```json
+{
+  "AI": {
+    "GitHubOwner": "microsoft",
+    "GitHubRepo": "semantic-kernel",
+    "GitHubPath": "docs",
+    "GitHubBranch": "main"
+  }
+}
+```
+
+**Usage:**
+```csharp
+using Octokit;
+using AI.Workshop.VectorStore.Ingestion;
+
+// Create GitHub client
+var gitHubClient = new GitHubClient(new ProductHeaderValue("AI.Workshop"));
+
+// Create markdown source
+var source = new GitHubMarkdownSource(
+    gitHubClient,
+    owner: "microsoft",
+    repo: "semantic-kernel",
+    path: "docs"
+);
+
+// Ingest markdown files
+await dataIngestor.IngestDataAsync(source);
+```
+
+When the LLM returns citations for `.md` files, the ChatCitation component automatically generates links to the configured GitHub repository:
+```
+https://github.com/microsoft/semantic-kernel/blob/main/docs/example.md
+```
+
+> **Note:** GitHub ingestion requires the `Octokit` package (already included in VectorStore).
 
 ### Vector Store Selection
 
